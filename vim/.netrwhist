@@ -1,0 +1,10 @@
+let g:netrw_dirhistmax  =10
+let g:netrw_dirhist_cnt =8
+let g:netrw_dirhist_1='/Users/huipeng/httpserver'
+let g:netrw_dirhist_2='/private/tmp/foo/app/models'
+let g:netrw_dirhist_3='/Users/huipeng/reportdengue/spec/models'
+let g:netrw_dirhist_4='/Users/huipeng/music_hangout/app/views/lists'
+let g:netrw_dirhist_5='/Users/huipeng/music_hangout/app/views/entries'
+let g:netrw_dirhist_6='/Users/huipeng/.vim/ftplugin'
+let g:netrw_dirhist_7='/Users/huipeng/music_hangout/app/assets/javascripts/views/entries'
+let g:netrw_dirhist_8='/Users/huipeng/music_hangout/app/assets/templates/lists'
