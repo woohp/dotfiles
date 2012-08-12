@@ -1,3 +1,5 @@
+call pathogen#infect()
+
 set nocompatible
 set bs=2 "set backspace to be able to delete previous characters
 set number "display line number
