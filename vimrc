@@ -12,7 +12,9 @@ Bundle 'gmarik/vundle'
 Bundle 'scrooloose/nerdtree'
 Bundle 'kchmck/vim-coffee-script'
 Bundle 'vim-ruby/vim-ruby'
-Bundle 'bbommarito/vim-slim'
+Bundle 'slim-template/vim-slim'
+Bundle 'tpope/vim-haml'
+Bundle 'kien/ctrlp.vim'
 
 set bs=2 "set backspace to be able to delete previous characters
 set number "display line number
@@ -70,6 +72,9 @@ autocmd WinEnter * setlocal cursorline
 autocmd WinLeave * setlocal nocursorline
 "set cursorline
 
+" sane pasting
+set paste
+
 " Smart way to move btw. windows
 map <C-j> <C-W>j
 map <C-k> <C-W>k
@@ -80,19 +85,27 @@ set autochdir " always set the directory to that of the current file
 
 " highlight Pmenu ctermbg=238 gui=bold
 set term=xterm-256color
+set bg=dark
 colorscheme wombat2
 
-set rnu
-au InsertEnter * :set nu
-au InsertLeave * :set rnu
-au FocusLost * :set nu
-au FocusGained * :set rnu
+"set rnu
+"au InsertEnter * :set nu
+"au InsertLeave * :set rnu
+"au FocusLost * :set nu
+"au FocusGained * :set rnu
 
 " NERDTree
 autocmd vimenter * NERDTree
 
-"ruby
+" ruby
 autocmd FileType ruby,eruby set omnifunc=rubycomplete#Complete
 autocmd FileType ruby,eruby let g:rubycomplete_buffer_loading = 1
 autocmd FileType ruby,eruby let g:rubycomplete_rails = 1
 autocmd FileType ruby,eruby let g:rubycomplete_classes_in_global = 1
+
+set directory^=$HOME/.vim_swap//   " put all swap files in one place
+nnoremap <Space> :noh<CR>
+
+" mason
+au BufNewFile,BufRead *.mi,*.m set syntax=mason
+

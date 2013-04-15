@@ -29,6 +29,7 @@ hi Folded       guifg=#384048 ctermfg=238  guibg=#A0A8B0 ctermbg=248  gui=NONE c
 hi Title        guifg=#F6F3E8 ctermfg=255  guibg=NONE    ctermbg=NONE gui=BOLD cterm=BOLD
 hi Visual       guifg=#F6F3E8 ctermfg=255  guibg=#505050 ctermbg=239  gui=NONE cterm=NONE
 hi SpecialKey   guifg=#808080 ctermfg=244  guibg=#343434 ctermbg=236  gui=NONE cterm=NONE
+hi Search       guifg=#4A01Fe ctermfg=57   guibg=#FFFFFF ctermbg=231  gui=None cterm=None
 hi CursorLine   guibg=#2D2D2D ctermbg=236  gui=NONE cterm=NONE
 hi MatchParen   guifg=#F6F3E8 ctermfg=255  guibg=#857B6F ctermbg=243  gui=BOLD cterm=BOLD
 hi Pmenu        guifg=#F6F3E8 ctermfg=255  guibg=#444444 ctermbg=238  gui=NONE cterm=NONE
