@@ -13,8 +13,8 @@ Bundle 'scrooloose/nerdtree'
 Bundle 'kchmck/vim-coffee-script'
 Bundle 'vim-ruby/vim-ruby'
 Bundle 'slim-template/vim-slim'
-Bundle 'tpope/vim-haml'
 Bundle 'kien/ctrlp.vim'
+Bundle 'altercation/vim-colors-solarized'
 
 set bs=2 "set backspace to be able to delete previous characters
 set number "display line number
@@ -88,6 +88,9 @@ set term=xterm-256color
 set bg=dark
 colorscheme wombat2
 
+set directory^=$HOME/.vim_swap//   " put all swap files in one place
+nnoremap <Space> :noh<CR>
+
 "set rnu
 "au InsertEnter * :set nu
 "au InsertLeave * :set rnu
@@ -103,9 +106,8 @@ autocmd FileType ruby,eruby let g:rubycomplete_buffer_loading = 1
 autocmd FileType ruby,eruby let g:rubycomplete_rails = 1
 autocmd FileType ruby,eruby let g:rubycomplete_classes_in_global = 1
 
-set directory^=$HOME/.vim_swap//   " put all swap files in one place
-nnoremap <Space> :noh<CR>
-
 " mason
 au BufNewFile,BufRead *.mi,*.m set syntax=mason
 
+" haml
+autocmd BufRead,BufNewFile *.hamlc set ft=haml
