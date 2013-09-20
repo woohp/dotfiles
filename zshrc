@@ -39,7 +39,9 @@ export PATH=/usr/local/share/python:$PATH
 
 unsetopt SHARE_HISTORY
 
-alias vim='mvim -v'
+if [ `uname` != 'Linux' ]; then
+  alias vim='mvim -v'
+fi
 alias tmux='tmux'
 
 export PATH="$HOME/.rbenv/bin:$PATH"
