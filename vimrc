@@ -15,6 +15,7 @@ Bundle 'vim-ruby/vim-ruby'
 Bundle 'slim-template/vim-slim'
 Bundle 'kien/ctrlp.vim'
 Bundle 'altercation/vim-colors-solarized'
+Bundle 'Valloric/YouCompleteMe'
 
 set bs=2 "set backspace to be able to delete previous characters
 set number "display line number
@@ -57,6 +58,8 @@ set incsearch
 set ignorecase
 set smartcase
 
+set hlsearch
+
 " Informative status line
 set laststatus=2 " always enable the status line
 set statusline=%F%m%r%h%w\ [TYPE=%Y\ %{&ff}]\ [%l/%L\ (%p%%)]
@@ -73,7 +76,7 @@ autocmd WinLeave * setlocal nocursorline
 "set cursorline
 
 " sane pasting
-set paste
+" set paste
 
 " Smart way to move btw. windows
 map <C-j> <C-W>j
