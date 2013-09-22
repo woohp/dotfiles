@@ -16,6 +16,7 @@ Bundle 'slim-template/vim-slim'
 Bundle 'kien/ctrlp.vim'
 Bundle 'altercation/vim-colors-solarized'
 Bundle 'Valloric/YouCompleteMe'
+Bundle 'jnwhiteh/vim-golang'
 
 set bs=2 "set backspace to be able to delete previous characters
 set number "display line number

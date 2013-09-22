@@ -51,3 +51,5 @@ export PATH="/usr/local/share/npm/bin:$PATH"
 export NODE_PATH="/usr/local/lib/node:/usr/local/share/npm/lib/node_modules"
 
 alias gl="git log --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit"
+
+export GOPATH=$HOME/go
