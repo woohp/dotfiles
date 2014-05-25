@@ -16,7 +16,9 @@ Bundle 'slim-template/vim-slim'
 Bundle 'kien/ctrlp.vim'
 Bundle 'altercation/vim-colors-solarized'
 Bundle 'Valloric/YouCompleteMe'
-Bundle 'jnwhiteh/vim-golang'
+Bundle 'pangloss/vim-javascript'
+Bundle 'othree/html5.vim'
+Bundle 'JesseKPhillips/d.vim'
 
 set bs=2 "set backspace to be able to delete previous characters
 set number "display line number
@@ -24,7 +26,6 @@ set number "display line number
 syntax on
 
 " use soft tabs of 4 spaces
-set smartindent
 set expandtab " expand tab to spaces
 set shiftwidth=4
 set softtabstop=4
@@ -76,9 +77,6 @@ autocmd WinEnter * setlocal cursorline
 autocmd WinLeave * setlocal nocursorline
 "set cursorline
 
-" sane pasting
-" set paste
-
 " Smart way to move btw. windows
 map <C-j> <C-W>j
 map <C-k> <C-W>k
@@ -93,7 +91,8 @@ set bg=dark
 colorscheme wombat2
 
 set directory^=$HOME/.vim_swap//   " put all swap files in one place
-nnoremap <Space> :noh<CR>
+
+nnoremap <Space> :noh<CR>          " when space is pressed, clear all highlights
 
 "set rnu
 "au InsertEnter * :set nu
@@ -115,3 +114,6 @@ au BufNewFile,BufRead *.mi,*.m set syntax=mason
 
 " haml
 autocmd BufRead,BufNewFile *.hamlc set ft=haml
+
+" YouCompleteMe
+let g:ycm_global_ycm_extra_conf='~/.ycm_extra_conf.py'
