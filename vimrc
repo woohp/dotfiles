@@ -26,6 +26,8 @@ set number "display line number
 syntax on
 
 " use soft tabs of 4 spaces
+set autoindent
+set cindent
 set expandtab " expand tab to spaces
 set shiftwidth=4
 set softtabstop=4
@@ -108,9 +110,6 @@ autocmd FileType ruby,eruby set omnifunc=rubycomplete#Complete
 autocmd FileType ruby,eruby let g:rubycomplete_buffer_loading = 1
 autocmd FileType ruby,eruby let g:rubycomplete_rails = 1
 autocmd FileType ruby,eruby let g:rubycomplete_classes_in_global = 1
-
-" mason
-au BufNewFile,BufRead *.mi,*.m set syntax=mason
 
 " haml
 autocmd BufRead,BufNewFile *.hamlc set ft=haml
