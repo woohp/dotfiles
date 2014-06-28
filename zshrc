@@ -34,7 +34,8 @@ plugins=(git osx)
 source $ZSH/oh-my-zsh.sh
 
 # Customize to your needs...
-export PATH=/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin
+export PATH=/Developer/NVIDIA/CUDA-6.0/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin
+export DYLD_LIBRARY_PATH=/Developer/NVIDIA/CUDA-6.0/lib:$DYLD_LIBRARY_PATH
 
 unsetopt SHARE_HISTORY
 
@@ -58,7 +59,6 @@ export WORKON_HOME="$HOME/.virtualenvs"
 PYTHONPATH="/usr/local/lib/python2.7/site-packages/:$PYTHONPATH"
 
 export EDITOR=vim
-
 export LESS='-R -X -F'
 
 alias ag="ag --pager less"
