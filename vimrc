@@ -14,11 +14,13 @@ Bundle 'kchmck/vim-coffee-script'
 Bundle 'vim-ruby/vim-ruby'
 Bundle 'slim-template/vim-slim'
 Bundle 'kien/ctrlp.vim'
+Bundle 'FelikZ/ctrlp-py-matcher'
 Bundle 'altercation/vim-colors-solarized'
 Bundle 'Valloric/YouCompleteMe'
 Bundle 'pangloss/vim-javascript'
 Bundle 'othree/html5.vim'
 Bundle 'JesseKPhillips/d.vim'
+Bundle 'scrooloose/syntastic'
 
 set bs=2 "set backspace to be able to delete previous characters
 set number "display line number
@@ -104,6 +106,7 @@ nnoremap <Space> :noh<CR>          " when space is pressed, clear all highlights
 
 " NERDTree
 autocmd vimenter * NERDTree
+let NERDTreeIgnore = ['\.pyc$']
 
 " ruby
 autocmd FileType ruby,eruby set omnifunc=rubycomplete#Complete
@@ -111,8 +114,21 @@ autocmd FileType ruby,eruby let g:rubycomplete_buffer_loading = 1
 autocmd FileType ruby,eruby let g:rubycomplete_rails = 1
 autocmd FileType ruby,eruby let g:rubycomplete_classes_in_global = 1
 
-" haml
-autocmd BufRead,BufNewFile *.hamlc set ft=haml
+" ctrlp
+if !has('python')
+    echo 'In order to use pymatcher plugin, you need +python compiled vim'
+else
+    let g:ctrlp_match_func = { 'match': 'pymatcher#PyMatch' }
+endif
+let g:ctrlp_lazy_update = 100
+let g:ctrlp_clear_cache_on_exit = 0
+if executable("ag")
+    set grepprg=ag\ --nogroup\ --nocolor
+    let g:ctrlp_user_command = 'ag %s -i --nocolor --nogroup --ignore ''.git'' --ignore ''.DS_Store'' --ignore ''node_modules'' --hidden -g ""'
+endif
 
 " YouCompleteMe
 let g:ycm_global_ycm_extra_conf='~/.ycm_extra_conf.py'
+
+" syntastic
+let g:syntastic_python_checkers = ['pyflakes']

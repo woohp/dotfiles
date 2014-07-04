@@ -46,9 +46,19 @@ alias tmux='tmux'
 export PATH="$HOME/.rbenv/bin:$PATH"
 if which rbenv > /dev/null; then eval "$(rbenv init -)"; fi
 
+PATH=$PATH:$HOME/.rvm/bin # Add RVM to PATH for scripting
+[[ -s "$HOME/.rvm/scripts/rvm" ]] && source "$HOME/.rvm/scripts/rvm" # Load RVM into a shell session *as a function*
+
 export PATH="/usr/local/share/npm/bin:$PATH"
 export NODE_PATH="/usr/local/lib/node:/usr/local/share/npm/lib/node_modules"
 
 alias gl="git log --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit"
 
-export GOPATH=$HOME/go
+export WORKON_HOME="$HOME/.virtualenvs"
+PYTHONPATH="/usr/local/lib/python2.7/site-packages/:$PYTHONPATH"
+
+export EDITOR=vim
+
+export LESS='-R -X -F'
+
+alias ag="ag --pager less"
