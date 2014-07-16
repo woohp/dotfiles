@@ -132,3 +132,7 @@ let g:ycm_global_ycm_extra_conf='~/.ycm_extra_conf.py'
 
 " syntastic
 let g:syntastic_python_checkers = ['pyflakes']
+let g:syntastic_cpp_compiler = 'clang++'
+let g:syntastic_cpp_compiler_options = ' -std=c++11 -stdlib=libc++'
+
+set re=1
