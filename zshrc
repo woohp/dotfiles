@@ -34,14 +34,11 @@ plugins=(git osx)
 source $ZSH/oh-my-zsh.sh
 
 # Customize to your needs...
-export PATH=/Developer/NVIDIA/CUDA-6.0/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin
-export DYLD_LIBRARY_PATH=/Developer/NVIDIA/CUDA-6.0/lib:$DYLD_LIBRARY_PATH
+export PATH=/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin
+#export DYLD_LIBRARY_PATH=/Developer/NVIDIA/CUDA-6.0/lib:$DYLD_LIBRARY_PATH
 
 unsetopt SHARE_HISTORY
 
-if [ `uname` != 'Linux' ]; then
-  alias vim='mvim -v'
-fi
 alias tmux='tmux'
 
 export PATH="$HOME/.rbenv/bin:$PATH"
@@ -57,6 +54,7 @@ alias gl="git log --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgree
 
 export WORKON_HOME="$HOME/.virtualenvs"
 PYTHONPATH="/usr/local/lib/python2.7/site-packages/:$PYTHONPATH"
+source /usr/local/bin/virtualenvwrapper.sh
 
 export EDITOR=vim
 export LESS='-R -X -F'
