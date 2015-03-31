@@ -10,17 +10,24 @@ Bundle 'gmarik/Vundle.vim'
 
 " other plugins
 Bundle 'scrooloose/nerdtree'
+Bundle 'hynek/vim-python-pep8-indent'
 Bundle 'kchmck/vim-coffee-script'
 Bundle 'vim-ruby/vim-ruby'
 Bundle 'slim-template/vim-slim'
 Bundle 'kien/ctrlp.vim'
 Bundle 'FelikZ/ctrlp-py-matcher'
-Bundle 'altercation/vim-colors-solarized'
 Bundle 'Valloric/YouCompleteMe'
 Bundle 'pangloss/vim-javascript'
 Bundle 'othree/html5.vim'
 Bundle 'JesseKPhillips/d.vim'
 Bundle 'scrooloose/syntastic'
+Bundle 'digitaltoad/vim-jade'
+Bundle 'leafgarland/typescript-vim'
+Bundle 'clausreinke/typescript-tools'
+Bundle 'marijnh/tern_for_vim'
+Plugin 'bling/vim-airline'
+Plugin 'kien/rainbow_parentheses.vim'
+Plugin 'rking/ag.vim'
 
 set bs=2 "set backspace to be able to delete previous characters
 set number "display line number
@@ -29,11 +36,11 @@ syntax on
 
 " use soft tabs of 4 spaces
 set autoindent
-set cindent
 set expandtab " expand tab to spaces
 set shiftwidth=4
 set softtabstop=4
 " set tabstop=4 " set tab itself to be 4 spaces
+autocmd BufNewFile,BufReadPost *.coffee setl shiftwidth=4 expandtab
 
 " Enable filetype plugin
 filetype indent on
@@ -113,6 +120,7 @@ autocmd FileType ruby,eruby set omnifunc=rubycomplete#Complete
 autocmd FileType ruby,eruby let g:rubycomplete_buffer_loading = 1
 autocmd FileType ruby,eruby let g:rubycomplete_rails = 1
 autocmd FileType ruby,eruby let g:rubycomplete_classes_in_global = 1
+set re=1
 
 " ctrlp
 if !has('python')
@@ -121,10 +129,10 @@ else
     let g:ctrlp_match_func = { 'match': 'pymatcher#PyMatch' }
 endif
 let g:ctrlp_lazy_update = 100
-let g:ctrlp_clear_cache_on_exit = 0
+let g:ctrlp_clear_cache_on_exit = 1
 if executable("ag")
     set grepprg=ag\ --nogroup\ --nocolor
-    let g:ctrlp_user_command = 'ag %s -i --nocolor --nogroup --ignore ''.git'' --ignore ''.DS_Store'' --ignore ''node_modules'' --hidden -g ""'
+    let g:ctrlp_user_command = 'ag %s -i --nocolor --nogroup --ignore ''.git'' --ignore ''.DS_Store'' --ignore ''node_modules'' --ignore ''bower_components'' --ignore ''media'' --ignore ''.pyc'' --hidden -g ""'
 endif
 
 " YouCompleteMe
@@ -136,3 +144,4 @@ let g:syntastic_cpp_compiler = 'clang++'
 let g:syntastic_cpp_compiler_options = ' -std=c++11 -stdlib=libc++'
 
 set re=1
+let g:syntastic_html_checkers = []
