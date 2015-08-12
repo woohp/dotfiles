@@ -29,13 +29,15 @@ ZSH_THEME="huipeng"
 # Which plugins would you like to load? (plugins can be found in ~/.oh-my-zsh/plugins/*)
 # Custom plugins may be added to ~/.oh-my-zsh/custom/plugins/
 # Example format: plugins=(rails git textmate ruby lighthouse)
-plugins=(git osx)
+plugins=(git osx django)
 
 source $ZSH/oh-my-zsh.sh
 
 # Customize to your needs...
 export PATH=/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin
-#export DYLD_LIBRARY_PATH=/Developer/NVIDIA/CUDA-6.0/lib:$DYLD_LIBRARY_PATH
+export PATH=/Developer/NVIDIA/CUDA-7.0/bin:$PATH
+export DYLD_LIBRARY_PATH=/Developer/NVIDIA/CUDA-7.0/lib:$DYLD_LIBRARY_PATH
+export LD_LIBRARY_PATH=/usr/local/cuda/lib:$LD_LIBRARY_PATH
 
 unsetopt SHARE_HISTORY
 
@@ -54,9 +56,29 @@ alias gl="git log --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgree
 
 export WORKON_HOME="$HOME/.virtualenvs"
 PYTHONPATH="/usr/local/lib/python2.7/site-packages/:$PYTHONPATH"
+# export PIP_REQUIRE_VIRTUALENV=true
 source /usr/local/bin/virtualenvwrapper.sh
 
 export EDITOR=vim
 export LESS='-R -X -F'
 
 alias ag="ag --pager less"
+
+
+# Call virtualenvwrapper's "workon" if .venv exists.  This is modified from--
+# http://justinlilly.com/python/virtualenv_wrapper_helper.html
+# which is linked from--
+# http://virtualenvwrapper.readthedocs.org/en/latest/tips.html#automatically-run-workon-when-entering-...
+check_virtualenv() {
+    if [ -e .venv ]; then
+        env=`cat .venv`
+        if [ "$env" != "${VIRTUAL_ENV##*/}" ]; then
+            workon $env
+            source $HOME/.$env
+        fi
+    fi
+}
+venv_cd () {
+    builtin cd "$@" && check_virtualenv
+}
+alias cd="venv_cd"

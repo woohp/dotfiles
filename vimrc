@@ -23,11 +23,11 @@ Bundle 'JesseKPhillips/d.vim'
 Bundle 'scrooloose/syntastic'
 Bundle 'digitaltoad/vim-jade'
 Bundle 'leafgarland/typescript-vim'
-Bundle 'clausreinke/typescript-tools'
+Bundle 'clausreinke/typescript-tools.vim'
 Bundle 'marijnh/tern_for_vim'
 Plugin 'bling/vim-airline'
-Plugin 'kien/rainbow_parentheses.vim'
 Plugin 'rking/ag.vim'
+Plugin 'rust-lang/rust.vim'
 
 set bs=2 "set backspace to be able to delete previous characters
 set number "display line number
@@ -137,11 +137,13 @@ endif
 
 " YouCompleteMe
 let g:ycm_global_ycm_extra_conf='~/.ycm_extra_conf.py'
+nnoremap <leader>jd :YcmCompleter GoTo<CR>
 
 " syntastic
-let g:syntastic_python_checkers = ['pyflakes']
+let g:syntastic_python_checkers = ['flake8']
+" let g:syntastic_python_checkers = ['pyflakes']
 let g:syntastic_cpp_compiler = 'clang++'
 let g:syntastic_cpp_compiler_options = ' -std=c++11 -stdlib=libc++'
+let g:syntastic_html_checkers = []
 
 set re=1
-let g:syntastic_html_checkers = []
