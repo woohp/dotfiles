@@ -5,29 +5,34 @@ set rtp+=~/.vim/bundle/Vundle.vim/
 call vundle#rc()
 
 " let Vundle manage Vundle
-" required! 
-Bundle 'gmarik/Vundle.vim'
+" required!
+Plugin 'VundleVim/Vundle.vim'
 
 " other plugins
-Bundle 'scrooloose/nerdtree'
-Bundle 'hynek/vim-python-pep8-indent'
-Bundle 'kchmck/vim-coffee-script'
-Bundle 'vim-ruby/vim-ruby'
-Bundle 'slim-template/vim-slim'
-Bundle 'kien/ctrlp.vim'
-Bundle 'FelikZ/ctrlp-py-matcher'
-Bundle 'Valloric/YouCompleteMe'
-Bundle 'pangloss/vim-javascript'
-Bundle 'othree/html5.vim'
-Bundle 'JesseKPhillips/d.vim'
-Bundle 'scrooloose/syntastic'
-Bundle 'digitaltoad/vim-jade'
-Bundle 'leafgarland/typescript-vim'
-Bundle 'clausreinke/typescript-tools.vim'
-Bundle 'marijnh/tern_for_vim'
-Plugin 'bling/vim-airline'
+Plugin 'scrooloose/nerdtree'
+Plugin 'hynek/vim-python-pep8-indent'
+Plugin 'kchmck/vim-coffee-script'
+Plugin 'vim-ruby/vim-ruby'
+Plugin 'slim-template/vim-slim'
+Plugin 'ctrlpvim/ctrlp.vim'
+" Plugin 'FelikZ/ctrlp-py-matcher'
+Plugin 'Valloric/YouCompleteMe'
+Plugin 'pangloss/vim-javascript'
+Plugin 'othree/html5.vim'
+Plugin 'JesseKPhillips/d.vim'
+Plugin 'scrooloose/syntastic'
+Plugin 'digitaltoad/vim-jade'
+Plugin 'leafgarland/typescript-vim'
+Plugin 'clausreinke/typescript-tools.vim'
+Plugin 'marijnh/tern_for_vim'
+Plugin 'vim-airline/vim-airline'
 Plugin 'rking/ag.vim'
 Plugin 'rust-lang/rust.vim'
+Plugin 'nathanaelkane/vim-indent-guides'
+" Plugin 'SQLComplete.vim'
+Plugin 'terryma/vim-multiple-cursors'
+Plugin 'tpope/vim-fugitive'
+Plugin 'elixir-lang/vim-elixir'
 
 set bs=2 "set backspace to be able to delete previous characters
 set number "display line number
@@ -65,17 +70,13 @@ set hid "Change buffer - without saving
 " some key bindings from emacs :)
 inoremap <C-A> <Home>
 inoremap <C-E> <End>
- 
+
 " Turn on incremental search with ignore case (except explicit caps)
 set incsearch
 set ignorecase
 set smartcase
 
 set hlsearch
-
-" Informative status line
-set laststatus=2 " always enable the status line
-set statusline=%F%m%r%h%w\ [TYPE=%Y\ %{&ff}]\ [%l/%L\ (%p%%)]
 
 " Enable indent folding
 " set foldenable
@@ -94,10 +95,13 @@ map <C-k> <C-W>k
 map <C-h> <C-W>h
 map <C-l> <C-W>l
 
-set autochdir " always set the directory to that of the current file
+" disable mouse select
+set mouse=
+
+" set autochdir " always set the directory to that of the current file
 
 " highlight Pmenu ctermbg=238 gui=bold
-set term=xterm-256color
+" set term=xterm-256color
 set bg=dark
 colorscheme wombat2
 
@@ -114,6 +118,8 @@ nnoremap <Space> :noh<CR>          " when space is pressed, clear all highlights
 " NERDTree
 autocmd vimenter * NERDTree
 let NERDTreeIgnore = ['\.pyc$']
+" Go to previous (last accessed) window.
+autocmd VimEnter * wincmd p
 
 " ruby
 autocmd FileType ruby,eruby set omnifunc=rubycomplete#Complete
@@ -123,12 +129,12 @@ autocmd FileType ruby,eruby let g:rubycomplete_classes_in_global = 1
 set re=1
 
 " ctrlp
-if !has('python')
-    echo 'In order to use pymatcher plugin, you need +python compiled vim'
-else
-    let g:ctrlp_match_func = { 'match': 'pymatcher#PyMatch' }
-endif
-let g:ctrlp_lazy_update = 100
+" if !has('python')
+"     echo 'In order to use pymatcher plugin, you need +python compiled vim'
+" else
+"     let g:ctrlp_match_func = { 'match': 'pymatcher#PyMatch' }
+" endif
+" let g:ctrlp_lazy_update = 100
 let g:ctrlp_clear_cache_on_exit = 1
 if executable("ag")
     set grepprg=ag\ --nogroup\ --nocolor
@@ -144,6 +150,15 @@ let g:syntastic_python_checkers = ['flake8']
 " let g:syntastic_python_checkers = ['pyflakes']
 let g:syntastic_cpp_compiler = 'clang++'
 let g:syntastic_cpp_compiler_options = ' -std=c++11 -stdlib=libc++'
-let g:syntastic_html_checkers = []
+let g:syntastic_html_checkers = ['tidy']
+let g:syntastic_html_tidy_exec = 'tidy'
 
-set re=1
+let g:indent_guides_auto_colors = 0
+let g:indent_guides_guide_size = 1
+autocmd VimEnter,Colorscheme * :hi IndentGuidesOdd  ctermbg=234
+autocmd VimEnter,Colorscheme * :hi IndentGuidesEven ctermbg=235
+
+let g:airline_powerline_fonts = 1
+
+" multiple cursors
+let g:multi_cursor_prev_key='<C-b>'
