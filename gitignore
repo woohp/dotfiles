@@ -1,0 +1,6 @@
+.DS\_Store
+*.sw?
+celerybeat-schedule
+node_modules
+bower_components
+**/compiled/*

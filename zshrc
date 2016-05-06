@@ -29,18 +29,26 @@ ZSH_THEME="huipeng"
 # Which plugins would you like to load? (plugins can be found in ~/.oh-my-zsh/plugins/*)
 # Custom plugins may be added to ~/.oh-my-zsh/custom/plugins/
 # Example format: plugins=(rails git textmate ruby lighthouse)
-plugins=(git osx django)
-
+plugins=(git osx django autojump bower brew npm python virtualenvwrapper)
 source $ZSH/oh-my-zsh.sh
 
+source $HOME/.arabica.zsh
+
 # Customize to your needs...
-export PATH=/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin
-export PATH=/Developer/NVIDIA/CUDA-7.0/bin:$PATH
-export DYLD_LIBRARY_PATH=/Developer/NVIDIA/CUDA-7.0/lib:$DYLD_LIBRARY_PATH
+export PATH=/usr/local/bin:/usr/bin:/bin:/usr/local/sbin:/usr/sbin:/sbin
+# export PATH=/Developer/NVIDIA/CUDA-7.5/bin:$PATH
+export CPATH=/usr/local/opt/emscripten/libexec/system/include/:/usr/local/opt/libxml2/include/libxml2:/usr/local/include:$CPATH
+# export DYLD_LIBRARY_PATH=/Users/huipeng/cuda:/Developer/NVIDIA/CUDA-7.5/lib:$DYLD_LIBRARY_PATH
 export LD_LIBRARY_PATH=/usr/local/cuda/lib:$LD_LIBRARY_PATH
+export LD_LIBRARY_PATH=/usr/local/opt/libxml2/lib:$LD_LIBRARY_PATH
+export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
+export TERMINFO="$HOME/.terminfo"
+
+export HOMEBREW_NO_ANALYTICS=1
 
 unsetopt SHARE_HISTORY
 
+alias v='nvim'
 alias tmux='tmux'
 
 export PATH="$HOME/.rbenv/bin:$PATH"
@@ -64,21 +72,4 @@ export LESS='-R -X -F'
 
 alias ag="ag --pager less"
 
-
-# Call virtualenvwrapper's "workon" if .venv exists.  This is modified from--
-# http://justinlilly.com/python/virtualenv_wrapper_helper.html
-# which is linked from--
-# http://virtualenvwrapper.readthedocs.org/en/latest/tips.html#automatically-run-workon-when-entering-...
-check_virtualenv() {
-    if [ -e .venv ]; then
-        env=`cat .venv`
-        if [ "$env" != "${VIRTUAL_ENV##*/}" ]; then
-            workon $env
-            source $HOME/.$env
-        fi
-    fi
-}
-venv_cd () {
-    builtin cd "$@" && check_virtualenv
-}
-alias cd="venv_cd"
+export GIRI_OAUTH='25fbcfcf65497a35ae961e7d08b4c1825e408a59'
