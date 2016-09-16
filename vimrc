@@ -1,38 +1,35 @@
-set nocompatible
+" set nocompatible
 filetype off
 
-set rtp+=~/.vim/bundle/Vundle.vim/
-call vundle#rc()
-
-" let Vundle manage Vundle
-" required!
-Plugin 'VundleVim/Vundle.vim'
+call plug#begin('~/.vim/plugged')
 
 " other plugins
-Plugin 'scrooloose/nerdtree'
-Plugin 'hynek/vim-python-pep8-indent'
-Plugin 'kchmck/vim-coffee-script'
-Plugin 'vim-ruby/vim-ruby'
-Plugin 'slim-template/vim-slim'
-Plugin 'ctrlpvim/ctrlp.vim'
-" Plugin 'FelikZ/ctrlp-py-matcher'
-Plugin 'Valloric/YouCompleteMe'
-Plugin 'pangloss/vim-javascript'
-Plugin 'othree/html5.vim'
-Plugin 'JesseKPhillips/d.vim'
-Plugin 'scrooloose/syntastic'
-Plugin 'digitaltoad/vim-jade'
-Plugin 'leafgarland/typescript-vim'
-Plugin 'clausreinke/typescript-tools.vim'
-Plugin 'marijnh/tern_for_vim'
-Plugin 'vim-airline/vim-airline'
-Plugin 'rking/ag.vim'
-Plugin 'rust-lang/rust.vim'
-Plugin 'nathanaelkane/vim-indent-guides'
-" Plugin 'SQLComplete.vim'
-Plugin 'terryma/vim-multiple-cursors'
-Plugin 'tpope/vim-fugitive'
-Plugin 'elixir-lang/vim-elixir'
+Plug 'Shougo/vimproc.vim', {'do' : 'make'}
+Plug 'ctrlpvim/ctrlp.vim'
+Plug 'scrooloose/nerdtree'
+Plug 'vim-airline/vim-airline'
+Plug 'terryma/vim-multiple-cursors'
+Plug 'tpope/vim-fugitive'
+
+" language-related plugins
+Plug 'hynek/vim-python-pep8-indent'
+Plug 'kchmck/vim-coffee-script'
+Plug 'Valloric/YouCompleteMe', { 'do': './install.py --tern-completer' }
+Plug 'pangloss/vim-javascript'
+Plug 'othree/html5.vim'
+Plug 'JesseKPhillips/d.vim'
+Plug 'scrooloose/syntastic'
+Plug 'digitaltoad/vim-pug'
+Plug 'leafgarland/typescript-vim'
+Plug 'Quramy/tsuquyomi'  " typescript syntax checker/linter
+Plug 'rking/ag.vim'
+Plug 'rust-lang/rust.vim'
+Plug 'elixir-lang/vim-elixir'
+Plug 'racer-rust/vim-racer'
+Plug 'hail2u/vim-css3-syntax'
+" Plug 'cakebaker/scss-syntax.vim'
+
+call plug#end()
 
 set bs=2 "set backspace to be able to delete previous characters
 set number "display line number
@@ -128,13 +125,6 @@ autocmd FileType ruby,eruby let g:rubycomplete_rails = 1
 autocmd FileType ruby,eruby let g:rubycomplete_classes_in_global = 1
 set re=1
 
-" ctrlp
-" if !has('python')
-"     echo 'In order to use pymatcher plugin, you need +python compiled vim'
-" else
-"     let g:ctrlp_match_func = { 'match': 'pymatcher#PyMatch' }
-" endif
-" let g:ctrlp_lazy_update = 100
 let g:ctrlp_clear_cache_on_exit = 1
 if executable("ag")
     set grepprg=ag\ --nogroup\ --nocolor
@@ -143,15 +133,17 @@ endif
 
 " YouCompleteMe
 let g:ycm_global_ycm_extra_conf='~/.ycm_extra_conf.py'
+" let g:ycm_rust_src_path = '~/rustc-1.11.0/src/'
 nnoremap <leader>jd :YcmCompleter GoTo<CR>
 
 " syntastic
 let g:syntastic_python_checkers = ['flake8']
-" let g:syntastic_python_checkers = ['pyflakes']
 let g:syntastic_cpp_compiler = 'clang++'
 let g:syntastic_cpp_compiler_options = ' -std=c++11 -stdlib=libc++'
 let g:syntastic_html_checkers = ['tidy']
 let g:syntastic_html_tidy_exec = 'tidy'
+let g:tsuquyomi_disable_quickfix = 1
+let g:syntastic_typescript_checkers = ['tsuquyomi'] " You shouldn't use 'tsc' checker.
 
 let g:indent_guides_auto_colors = 0
 let g:indent_guides_guide_size = 1
