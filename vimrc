@@ -132,6 +132,7 @@ if executable("ag")
 endif
 
 " YouCompleteMe
+let g:ycm_python_binary_path = 'python3'
 let g:ycm_global_ycm_extra_conf='~/.ycm_extra_conf.py'
 " let g:ycm_rust_src_path = '~/rustc-1.11.0/src/'
 nnoremap <leader>jd :YcmCompleter GoTo<CR>

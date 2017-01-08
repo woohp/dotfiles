@@ -29,10 +29,10 @@ ZSH_THEME="huipeng"
 # Which plugins would you like to load? (plugins can be found in ~/.oh-my-zsh/plugins/*)
 # Custom plugins may be added to ~/.oh-my-zsh/custom/plugins/
 # Example format: plugins=(rails git textmate ruby lighthouse)
-plugins=(git osx django autojump bower brew npm python virtualenvwrapper)
-source $ZSH/oh-my-zsh.sh
+export VIRTUALENVWRAPPER_PYTHON="/usr/local/bin/python3"
 
-source $HOME/.arabica.zsh
+plugins=(git osx django autojump npm python virtualenvwrapper)
+source $ZSH/oh-my-zsh.sh
 
 # Customize to your needs...
 export PATH=/usr/local/cuda/bin:/usr/local/bin:/usr/bin:/bin:/usr/local/sbin:/usr/sbin:/sbin
