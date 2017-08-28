@@ -4,17 +4,22 @@ filetype off
 call plug#begin('~/.vim/plugged')
 
 " other plugins
-Plug 'Shougo/vimproc.vim', {'do' : 'make'}
-Plug 'ctrlpvim/ctrlp.vim'
+Plug 'Shougo/vimproc.vim', {'do' : 'make'}  " required for tsuquyomi
+" Plug 'ctrlpvim/ctrlp.vim'
 Plug 'scrooloose/nerdtree'
 Plug 'vim-airline/vim-airline'
 Plug 'terryma/vim-multiple-cursors'
 Plug 'tpope/vim-fugitive'
+Plug 'junegunn/fzf'
+Plug 'junegunn/fzf.vim'
+" Plug 'mgedmin/pythonhelper.vim'
+Plug 'altercation/vim-colors-solarized'
 
 " language-related plugins
 Plug 'hynek/vim-python-pep8-indent'
-Plug 'kchmck/vim-coffee-script'
-Plug 'Valloric/YouCompleteMe', { 'do': './install.py --tern-completer' }
+" Plug 'kchmck/vim-coffee-script'
+Plug 'Valloric/YouCompleteMe', { 'do': './install.py --tern-completer --clang-completer' }
+" Plug 'roxma/nvim-completion-manager'
 Plug 'pangloss/vim-javascript'
 Plug 'othree/html5.vim'
 Plug 'JesseKPhillips/d.vim'
@@ -22,12 +27,13 @@ Plug 'scrooloose/syntastic'
 Plug 'digitaltoad/vim-pug'
 Plug 'leafgarland/typescript-vim'
 Plug 'Quramy/tsuquyomi'  " typescript syntax checker/linter
-Plug 'rking/ag.vim'
+" Plug 'rking/ag.vim'
 Plug 'rust-lang/rust.vim'
 Plug 'elixir-lang/vim-elixir'
-Plug 'racer-rust/vim-racer'
 Plug 'hail2u/vim-css3-syntax'
+" Plug 'eagletmt/neco-ghc'
 " Plug 'cakebaker/scss-syntax.vim'
+" Plug 'racer-rust/vim-racer'
 
 call plug#end()
 
@@ -47,7 +53,7 @@ autocmd BufNewFile,BufReadPost *.coffee setl shiftwidth=4 expandtab
 " Enable filetype plugin
 filetype indent on
 filetype plugin on
-filetype plugin indent on
+" filetype plugin indent on
 
 " make the tab key reindent the line
 " http://smalltalk.gnu.org/blog/bonzinip/emacs-ifying-vims-autoindent
@@ -99,8 +105,9 @@ set mouse=
 
 " highlight Pmenu ctermbg=238 gui=bold
 " set term=xterm-256color
-set bg=dark
-colorscheme wombat2
+" set bg=dark
+" colorscheme wombat2
+colorscheme solarized
 
 set directory^=$HOME/.vim_swap//   " put all swap files in one place
 
@@ -125,26 +132,40 @@ autocmd FileType ruby,eruby let g:rubycomplete_rails = 1
 autocmd FileType ruby,eruby let g:rubycomplete_classes_in_global = 1
 set re=1
 
-let g:ctrlp_clear_cache_on_exit = 1
-if executable("ag")
-    set grepprg=ag\ --nogroup\ --nocolor
-    let g:ctrlp_user_command = 'ag %s -i --nocolor --nogroup --ignore ''.git'' --ignore ''.DS_Store'' --ignore ''node_modules'' --ignore ''bower_components'' --ignore ''media'' --ignore ''.pyc'' --hidden -g ""'
-endif
+nnoremap <c-p> :Files<cr>
+" let g:ctrlp_clear_cache_on_exit = 1
+" if executable("ag")
+"     set grepprg=ag\ --nogroup\ --nocolor
+"     let g:ctrlp_user_command = 'ag %s -i --nocolor --nogroup --ignore ''.git'' --ignore ''.DS_Store'' --ignore ''node_modules'' --ignore ''bower_components'' --ignore ''media'' --ignore ''.pyc'' --hidden -g ""'
+" endif
 
 " YouCompleteMe
 let g:ycm_python_binary_path = 'python3'
 let g:ycm_global_ycm_extra_conf='~/.ycm_extra_conf.py'
-" let g:ycm_rust_src_path = '~/rustc-1.11.0/src/'
+let g:ycm_autoclose_preview_window_after_completion = 1
+let g:ycm_semantic_triggers = {
+    \ 'haskell' : ['.'],
+\ }
+let g:ycm_rust_src_path = '/Users/huipeng/rustc-1.12.0/src'
 nnoremap <leader>jd :YcmCompleter GoTo<CR>
+nnoremap <leader>jt :YcmCompleter GetType<CR>
+
+" rust racer
+" let g:racer_cmd = '/Users/huipeng/.cargo/bin/racer'
+" let $RUST_SRC_PATH = '/Users/huipeng/rustc-1.12.0/src'
 
 " syntastic
 let g:syntastic_python_checkers = ['flake8']
 let g:syntastic_cpp_compiler = 'clang++'
-let g:syntastic_cpp_compiler_options = ' -std=c++11 -stdlib=libc++'
+let g:syntastic_cpp_compiler_options = ' -std=c++14 -stdlib=libc++'
 let g:syntastic_html_checkers = ['tidy']
 let g:syntastic_html_tidy_exec = 'tidy'
 let g:tsuquyomi_disable_quickfix = 1
 let g:syntastic_typescript_checkers = ['tsuquyomi'] " You shouldn't use 'tsc' checker.
+let g:syntastic_pug_checkers = ['pug_lint']
+" let g:syntastic_enable_elixir_checker = 1
+" let g:syntastic_elixir_checkers = ['elixir']
+let g:syntastic_rust_checkers = ['rustc']
 
 let g:indent_guides_auto_colors = 0
 let g:indent_guides_guide_size = 1
@@ -155,3 +176,9 @@ let g:airline_powerline_fonts = 1
 
 " multiple cursors
 let g:multi_cursor_prev_key='<C-b>'
+
+let g:haskellmode_completion_ghc = 0
+let g:necoghc_enable_detailed_browse = 1
+autocmd FileType haskell setlocal omnifunc=necoghc#omnifunc
+
+set statusline=%<%f\ %h%m%r\ %1*%{TagInStatusLine()}%*%=%-14.(%l,%c%V%)\ %P
