@@ -36,17 +36,17 @@ export VIRTUALENVWRAPPER_PYTHON=/usr/local/opt/python/libexec/bin/python
 
 plugins=(git osx django autojump new npm python virtualenvwrapper)
 
+source $ZSH/oh-my-zsh.sh
+source $HOME/.arabica.zsh
+
 autoload -U promptinit; promptinit
 prompt pure
-
-source $HOME/.arabica.zsh
 
 # Customize to your needs...
 export PATH=/usr/local/cuda/bin:/usr/local/bin:/usr/bin:/bin:/usr/local/sbin:/usr/sbin:/sbin
 export PATH=/usr/local/opt/python/libexec/bin:$PATH
 # export CPATH=/usr/local/opt/emscripten/libexec/system/include/:/usr/local/opt/libxml2/include/libxml2:/usr/local/include:$CPATH
 export CPATH=/usr/local/cuda/include:/usr/local/opt/libxml2/include/libxml2:/usr/local/include:$CPATH
-# export DYLD_LIBRARY_PATH=/Users/huipeng/cuda:/Developer/NVIDIA/CUDA-7.5/lib:$DYLD_LIBRARY_PATH
 export LD_LIBRARY_PATH=/usr/local/cuda/lib:$LD_LIBRARY_PATH
 export LD_LIBRARY_PATH=/usr/local/opt/libxml2/lib:$LD_LIBRARY_PATH
 export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH

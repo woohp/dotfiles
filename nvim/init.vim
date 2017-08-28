@@ -1,7 +1,7 @@
 " set nocompatible
 filetype off
 
-call plug#begin('~/.vim/plugged')
+call plug#begin('~/.local/share/nvim/plugged')
 
 " other plugins
 Plug 'Shougo/vimproc.vim', {'do' : 'make'}  " required for tsuquyomi

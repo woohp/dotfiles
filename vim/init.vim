@@ -1,1 +1,0 @@
-/Users/huipeng/.vimrc
