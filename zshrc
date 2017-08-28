@@ -5,7 +5,8 @@ ZSH=$HOME/.oh-my-zsh
 # Look in ~/.oh-my-zsh/themes/
 # Optionally, if you set this to "random", it'll load a random theme each
 # time that oh-my-zsh is loaded.
-ZSH_THEME="huipeng"
+# ZSH_THEME="pure"
+ZSH_THEME=""
 
 # Example aliases
 # alias zshconfig="mate ~/.zshrc"
@@ -26,16 +27,23 @@ ZSH_THEME="huipeng"
 # Uncomment following line if you want red dots to be displayed while waiting for completion
 # COMPLETION_WAITING_DOTS="true"
 
+export VIRTUALENVWRAPPER_PYTHON=/usr/local/opt/python/libexec/bin/python
+
 # Which plugins would you like to load? (plugins can be found in ~/.oh-my-zsh/plugins/*)
 # Custom plugins may be added to ~/.oh-my-zsh/custom/plugins/
 # Example format: plugins=(rails git textmate ruby lighthouse)
-export VIRTUALENVWRAPPER_PYTHON="/usr/local/bin/python3"
+# export VIRTUALENVWRAPPER_PYTHON="/usr/local/bin/python3"
 
-plugins=(git osx django autojump npm python virtualenvwrapper)
-source $ZSH/oh-my-zsh.sh
+plugins=(git osx django autojump new npm python virtualenvwrapper)
+
+autoload -U promptinit; promptinit
+prompt pure
+
+source $HOME/.arabica.zsh
 
 # Customize to your needs...
 export PATH=/usr/local/cuda/bin:/usr/local/bin:/usr/bin:/bin:/usr/local/sbin:/usr/sbin:/sbin
+export PATH=/usr/local/opt/python/libexec/bin:$PATH
 # export CPATH=/usr/local/opt/emscripten/libexec/system/include/:/usr/local/opt/libxml2/include/libxml2:/usr/local/include:$CPATH
 export CPATH=/usr/local/cuda/include:/usr/local/opt/libxml2/include/libxml2:/usr/local/include:$CPATH
 # export DYLD_LIBRARY_PATH=/Users/huipeng/cuda:/Developer/NVIDIA/CUDA-7.5/lib:$DYLD_LIBRARY_PATH
@@ -49,7 +57,8 @@ export HOMEBREW_NO_ANALYTICS=1
 unsetopt SHARE_HISTORY
 
 alias v='nvim'
-alias tmux='tmux'
+alias vim='nvim'
+# alias tmux='tmux'
 
 # export PATH="$HOME/.rbenv/bin:$PATH"
 # if which rbenv > /dev/null; then eval "$(rbenv init -)"; fi
@@ -62,15 +71,15 @@ export NODE_PATH="/usr/local/lib/node:/usr/local/share/npm/lib/node_modules"
 
 alias gl="git log --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit"
 
-export WORKON_HOME="$HOME/.virtualenvs"
-PYTHONPATH="/usr/local/lib/python2.7/site-packages/:$PYTHONPATH"
 export PIP_REQUIRE_VIRTUALENV=true
+export WORKON_HOME="$HOME/.virtualenvs"
+# export PYTHONPATH="/usr/local/lib/python2.7/site-packages/:$PYTHONPATH"
 source /usr/local/bin/virtualenvwrapper.sh
 
-export EDITOR=vim
-export LESS='-R -X -F'
+export EDITOR=nvim
+export LESS='-RXF'
 
-alias ag="ag -Q --pager less"
+# alias ag="ag -Q --pager less"
 
 
 man() {
@@ -84,3 +93,15 @@ man() {
         LESS_TERMCAP_us=$(printf "\e[1;32m") \
         man "$@"
     }
+
+export PATH="$HOME/.yarn/bin:$PATH"
+
+function ag()
+{
+    /usr/bin/env rg -p "$@" | less -RXF
+}
+
+export FZF_DEFAULT_COMMAND='rg --files --hidden --ignore-file ~/.rgignore'
+alias ls=exa
+
+source ~/.zprofile

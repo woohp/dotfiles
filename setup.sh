@@ -10,3 +10,4 @@ ln -sf "$PWD/gitignore" $HOME/.gitignore
 tic xterm-256color.ti
 
 defaults write -g ApplePressAndHoldEnabled -bool false
+mkdir $HOME/.vim_swap
