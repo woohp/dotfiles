@@ -1,12 +1,15 @@
-mkdir $HOME/.config
-mkdir $HOME/.config/nvim
+mkdir -p $HOME/.config/nvim
 
-ln -sf "$PWD/vim" $HOME/.vim
-ln -sf "$PWD/vimrc" $HOME/.vimrc
+# ln -sf "$PWD/vim" $HOME/.vim
+# ln -sf "$PWD/vimrc" $HOME/.vimrc
 ln -sf "$PWD/vimrc" $HOME/.config/nvim/init.vim
-ln -sf "$PWD/zshrc" $HOME/.zshrc
+# ln -sf "$PWD/zshrc" $HOME/.zshrc
 ln -sf "$PWD/gitignore" $HOME/.gitignore
 
-tic xterm-256color.ti
+# tic xterm-256color.ti
 
-defaults write -g ApplePressAndHoldEnabled -bool false
+# defaults write -g ApplePressAndHoldEnabled -bool false
+
+echo 'installing vim-plug'
+curl -fLo ~/.local/share/nvim/site/autoload/plug.vim --create-dirs \
+    https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
