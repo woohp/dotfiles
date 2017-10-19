@@ -1,6 +1,9 @@
 " set nocompatible
 filetype off
 
+let g:python_host_prog = '/home/huipeng/.pyenv/versions/2.7.13/bin/python2'
+let g:python3_host_prog = '/home/huipeng/.pyenv/versions/3.6.2/bin/python3'
+
 call plug#begin('~/.vim/plugged')
 
 " other plugins
@@ -14,11 +17,13 @@ Plug 'tpope/vim-fugitive'
 " language-related plugins
 Plug 'hynek/vim-python-pep8-indent'
 Plug 'kchmck/vim-coffee-script'
-Plug 'Valloric/YouCompleteMe', { 'do': './install.py --tern-completer' }
+Plug 'Shougo/deoplete.nvim', { 'do': ':UpdateRemotePlugins' }
+Plug 'zchee/deoplete-jedi'
 Plug 'pangloss/vim-javascript'
 Plug 'othree/html5.vim'
 Plug 'JesseKPhillips/d.vim'
-Plug 'scrooloose/syntastic'
+" Plug 'scrooloose/syntastic'
+Plug 'w0rp/ale'
 Plug 'digitaltoad/vim-pug'
 Plug 'leafgarland/typescript-vim'
 Plug 'Quramy/tsuquyomi'  " typescript syntax checker/linter
@@ -27,9 +32,12 @@ Plug 'rust-lang/rust.vim'
 Plug 'elixir-lang/vim-elixir'
 Plug 'racer-rust/vim-racer'
 Plug 'hail2u/vim-css3-syntax'
+Plug 'altercation/vim-colors-solarized'
 " Plug 'cakebaker/scss-syntax.vim'
 
 call plug#end()
+
+call deoplete#enable()
 
 set bs=2 "set backspace to be able to delete previous characters
 set number "display line number
@@ -99,8 +107,10 @@ set mouse=
 
 " highlight Pmenu ctermbg=238 gui=bold
 " set term=xterm-256color
-set bg=dark
-colorscheme wombat2
+" set bg=dark
+" colorscheme wombat2
+set background=light
+colorscheme solarized
 
 set directory^=$HOME/.vim_swap//   " put all swap files in one place
 
@@ -138,13 +148,21 @@ let g:ycm_global_ycm_extra_conf='~/.ycm_extra_conf.py'
 nnoremap <leader>jd :YcmCompleter GoTo<CR>
 
 " syntastic
-let g:syntastic_python_checkers = ['flake8']
-let g:syntastic_cpp_compiler = 'clang++'
-let g:syntastic_cpp_compiler_options = ' -std=c++11 -stdlib=libc++'
-let g:syntastic_html_checkers = ['tidy']
-let g:syntastic_html_tidy_exec = 'tidy'
-let g:tsuquyomi_disable_quickfix = 1
-let g:syntastic_typescript_checkers = ['tsuquyomi'] " You shouldn't use 'tsc' checker.
+" let g:syntastic_python_checkers = ['flake8']
+" let g:syntastic_cpp_compiler = 'clang++'
+" let g:syntastic_cpp_compiler_options = ' -std=c++11 -stdlib=libc++'
+" let g:syntastic_html_checkers = ['tidy']
+" let g:syntastic_html_tidy_exec = 'tidy'
+" let g:tsuquyomi_disable_quickfix = 1
+" let g:syntastic_typescript_checkers = ['tsuquyomi'] " You shouldn't use 'tsc' checker.
+
+" ale
+let g:ale_fixers = {
+            \ 'javascript': ['tsserver'],
+            \ 'python': ['flake8'],
+            \ 'c++': ['clang'],
+            \ 'html': ['tidy'],
+            \ }
 
 let g:indent_guides_auto_colors = 0
 let g:indent_guides_guide_size = 1
