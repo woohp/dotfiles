@@ -13,27 +13,29 @@ Plug 'tpope/vim-fugitive'
 Plug 'junegunn/fzf'
 Plug 'junegunn/fzf.vim'
 " Plug 'mgedmin/pythonhelper.vim'
-Plug 'altercation/vim-colors-solarized'
+Plug 'romainl/flattened'
+" Plug 'ayu-theme/ayu-vim'
+Plug 'google/yapf', { 'rtp': 'plugins/vim', 'for': 'python' }
+Plug 'tpope/vim-surround'
 
 " language-related plugins
 Plug 'hynek/vim-python-pep8-indent'
-" Plug 'kchmck/vim-coffee-script'
-Plug 'Valloric/YouCompleteMe', { 'do': './install.py --tern-completer --clang-completer' }
-" Plug 'roxma/nvim-completion-manager'
+Plug 'Valloric/YouCompleteMe', { 'do': './install.py --ts-completer --clang-completer' }
 Plug 'pangloss/vim-javascript'
 Plug 'othree/html5.vim'
 Plug 'JesseKPhillips/d.vim'
-Plug 'scrooloose/syntastic'
 Plug 'digitaltoad/vim-pug'
 Plug 'leafgarland/typescript-vim'
-Plug 'Quramy/tsuquyomi'  " typescript syntax checker/linter
-" Plug 'rking/ag.vim'
+Plug 'w0rp/ale'
+" Plug 'Quramy/tsuquyomi'  " typescript syntax checker/linter
 Plug 'rust-lang/rust.vim'
-Plug 'elixir-lang/vim-elixir'
+Plug 'elixir-editors/vim-elixir'
 Plug 'hail2u/vim-css3-syntax'
 " Plug 'eagletmt/neco-ghc'
 " Plug 'cakebaker/scss-syntax.vim'
 " Plug 'racer-rust/vim-racer'
+Plug 'cespare/vim-toml'
+Plug 'Glench/Vim-Jinja2-Syntax'
 
 call plug#end()
 
@@ -66,7 +68,7 @@ set cinoptions=:0,(0,u0,W1s
 set autoread
 
 " Fast saving
-" nmap <leader>w :w<cr>
+nmap <leader>w :w<cr>
 
 set hid "Change buffer - without saving
 
@@ -105,9 +107,11 @@ set mouse=
 
 " highlight Pmenu ctermbg=238 gui=bold
 " set term=xterm-256color
-" set bg=dark
 " colorscheme wombat2
-colorscheme solarized
+" colorscheme solarized
+colorscheme flattened_light
+set termguicolors
+" colorscheme ayu
 
 set directory^=$HOME/.vim_swap//   " put all swap files in one place
 
@@ -120,17 +124,12 @@ nnoremap <Space> :noh<CR>          " when space is pressed, clear all highlights
 "au FocusGained * :set rnu
 
 " NERDTree
-autocmd vimenter * NERDTree
-let NERDTreeIgnore = ['\.pyc$']
+" autocmd vimenter * NERDTree
+autocmd StdinReadPre * let s:std_in=1
+autocmd VimEnter * if argc() == 0 && !exists("s:std_in") | NERDTree | endif
+let NERDTreeIgnore = ['\.pyc$', '^__pycache__$', '\.egg-info', '^build$', 'a.out', '\.pkl$', '\.zst$', '\.sqlite$', '\.png$', '\.h5$', '\.pb$', '\.npy$', '\.mp4$']
 " Go to previous (last accessed) window.
 autocmd VimEnter * wincmd p
-
-" ruby
-autocmd FileType ruby,eruby set omnifunc=rubycomplete#Complete
-autocmd FileType ruby,eruby let g:rubycomplete_buffer_loading = 1
-autocmd FileType ruby,eruby let g:rubycomplete_rails = 1
-autocmd FileType ruby,eruby let g:rubycomplete_classes_in_global = 1
-set re=1
 
 nnoremap <c-p> :Files<cr>
 " let g:ctrlp_clear_cache_on_exit = 1
@@ -146,7 +145,6 @@ let g:ycm_autoclose_preview_window_after_completion = 1
 let g:ycm_semantic_triggers = {
     \ 'haskell' : ['.'],
 \ }
-let g:ycm_rust_src_path = '/Users/huipeng/rustc-1.12.0/src'
 nnoremap <leader>jd :YcmCompleter GoTo<CR>
 nnoremap <leader>jt :YcmCompleter GetType<CR>
 
@@ -154,23 +152,26 @@ nnoremap <leader>jt :YcmCompleter GetType<CR>
 " let g:racer_cmd = '/Users/huipeng/.cargo/bin/racer'
 " let $RUST_SRC_PATH = '/Users/huipeng/rustc-1.12.0/src'
 
-" syntastic
-let g:syntastic_python_checkers = ['flake8']
-let g:syntastic_cpp_compiler = 'clang++'
-let g:syntastic_cpp_compiler_options = ' -std=c++14 -stdlib=libc++'
-let g:syntastic_html_checkers = ['tidy']
-let g:syntastic_html_tidy_exec = 'tidy'
-let g:tsuquyomi_disable_quickfix = 1
-let g:syntastic_typescript_checkers = ['tsuquyomi'] " You shouldn't use 'tsc' checker.
-let g:syntastic_pug_checkers = ['pug_lint']
-" let g:syntastic_enable_elixir_checker = 1
-" let g:syntastic_elixir_checkers = ['elixir']
-let g:syntastic_rust_checkers = ['rustc']
+" ale
+let g:ale_linters = {
+            \ 'python': ['flake8'],
+            \ 'c++': ['clang'],
+            \ 'typescript': ['tsserver'],
+            \ 'javascript': ['eslint'],
+            \ 'html': ['tidy'],
+            \ 'rust': ['rls'],
+            \ '*': [],
+\}
+let g:ale_cpp_clang_executable = 'clang++'
+let g:ale_cpp_clang_options = '-std=c++1z -stdlib=libc++ -Wall'
 
 let g:indent_guides_auto_colors = 0
 let g:indent_guides_guide_size = 1
 autocmd VimEnter,Colorscheme * :hi IndentGuidesOdd  ctermbg=234
 autocmd VimEnter,Colorscheme * :hi IndentGuidesEven ctermbg=235
+
+" run YAPF
+nnoremap <leader>y :call yapf#YAPF()<cr>
 
 let g:airline_powerline_fonts = 1
 
@@ -181,4 +182,9 @@ let g:haskellmode_completion_ghc = 0
 let g:necoghc_enable_detailed_browse = 1
 autocmd FileType haskell setlocal omnifunc=necoghc#omnifunc
 
-set statusline=%<%f\ %h%m%r\ %1*%{TagInStatusLine()}%*%=%-14.(%l,%c%V%)\ %P
+" set statusline=%<%f\ %h%m%r\ %1*%{TagInStatusLine()}%*%=%-14.(%l,%c%V%)\ %P
+
+" force some special files to use certain syntaxes
+au BufReadPost Pipfile set syntax=toml
+au BufReadPost Pipfile.lock set syntax=json
+au BufReadPost SConstruct set syntax=python
