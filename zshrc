@@ -105,15 +105,16 @@ prompt pure
 
 export PATH=/usr/local/opt/python/libexec/bin:/usr/local/sbin:$PATH
 
-if ! command -v nvim &> /dev/null; then
+if ! [ command -v nvim &> /dev/null ]; then
     alias v=nvim
     alias vim=nvim
     export EDITOR=nvim
-elif ! command -v vim &> /dev/null; then
+elif ! [ command -v vim &> /dev/null ]; then
+    alias v=vim
     export EDITOR=vim
 fi
 
-if ! command -v exa &> /dev/null; then
+if ! [ command -v exa &> /dev/null ]; then
     alias ls=exa
 fi
 
@@ -122,8 +123,11 @@ export LESS='-RXF'
 # setup virtualenv
 export PIP_REQUIRE_VIRTUALENV=true
 export WORKON_HOME="$HOME/.virtualenvs"
-source /usr/local/bin/virtualenvwrapper.sh
-
+if [ -f /usr/local/bin/virtualenvwrapper.sh ]; then
+    source /usr/local/bin/virtualenvwrapper.sh
+elif [ -f /usr/bin/virtualenvwrapper.sh ]; then
+    source /usr/bin/virtualenvwrapper.sh
+fi
 export PYTHONBREAKPOINT='ipdb.set_trace'
 
 alias gl="git log --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit"
@@ -152,3 +156,5 @@ alias scp='rsync --verbose --progress --partial'
 
 # have iex save history
 export ERL_AFLAGS="-kernel shell_history enabled"
+
+zstyle ':completion:*:*:nvim:*:*files' ignored-patterns '*.(so|png|jpg|jpeg|pdf)'

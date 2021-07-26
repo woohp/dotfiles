@@ -1,0 +1,9 @@
+[user]
+	name = Hui Peng Hu
+	email = woohp135@gmail.com
+[alias]
+	amend = commit --amend --no-edit
+[core]
+	excludesfile = /Users/huipeng/.gitignore
+[pull]
+	ff = only
