@@ -1,6 +1,10 @@
-.DS\_Store
+.DS_Store
 *.sw?
 celerybeat-schedule
 node_modules
 bower_components
 **/compiled/*
+.mypy_cache
+*.so
+build
+__pycache__
