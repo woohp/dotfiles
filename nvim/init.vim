@@ -24,18 +24,16 @@ Plug 'nvim-telescope/telescope-fzy-native.nvim'
 
 " language-related plugins
 Plug 'hynek/vim-python-pep8-indent'
-" Plug 'ycm-core/YouCompleteMe', { 'do': './install.py --clang-completer --ts-completer' }
 Plug 'neoclide/coc.nvim', {'branch': 'release'}
-" Plug 'pangloss/vim-javascript'
 Plug 'othree/html5.vim'
 Plug 'JesseKPhillips/d.vim'
 Plug 'digitaltoad/vim-pug'
-" Plug 'leafgarland/typescript-vim'
 Plug 'dense-analysis/ale'
 " Plug 'rust-lang/rust.vim'
 Plug 'elixir-editors/vim-elixir'
 Plug 'hail2u/vim-css3-syntax'
 Plug 'gutenye/json5.vim'
+Plug 'neoclide/jsonc.vim'
 " Plug 'eagletmt/neco-ghc'
 " Plug 'cakebaker/scss-syntax.vim'
 " Plug 'racer-rust/vim-racer'
@@ -59,6 +57,7 @@ set shiftwidth=4
 set softtabstop=4
 " set tabstop=4 " set tab itself to be 4 spaces
 autocmd BufNewFile,BufReadPost *.coffee setl shiftwidth=4 expandtab
+autocmd BufRead,BufNewFile tsconfig.json set filetype=jsonc
 
 " Enable filetype plugin
 filetype indent on
@@ -135,7 +134,7 @@ nnoremap <Space> :noh<CR>
 " autocmd vimenter * NERDTree
 autocmd StdinReadPre * let s:std_in=1
 autocmd VimEnter * if argc() == 0 && !exists("s:std_in") | NERDTree | endif
-let NERDTreeIgnore = ['\.pyc$', '^__pycache__$', '\.egg-info', '^build$', 'a\.out', '\.pkl$', '\.zst$', '\.sqlite$', '\.png$', '\.h5$', '\.pb$', '\.npy$', '\.mp4$']
+let NERDTreeIgnore = ['\.pyc$', '^__pycache__$', '\.egg-info', '^build$', 'a\.out', '\.pkl$', '\.zst$', '\.sqlite$', '\.png$', '\.h5$', '\.pb$', '\.npy$', '\.mp4$', '\.so$', '\.so.*']
 " Go to previous (last accessed) window.
 autocmd VimEnter * wincmd p
 
@@ -147,17 +146,6 @@ nnoremap <c-p> <cmd>Telescope find_files<cr>
 "     let g:ctrlp_user_command = 'rg %s --files --color=never -g ''!*.git'' -g ''!.DS_Store'' -g ''!*node_modules*'' -g ''!*bower_components*'' -g ''!media*'' -g ''!*.pyc'' -g ''!.mypy_cache*'' -g ''!__pycache__'' -g ''!*.mdb'' -g ''!*.so'' -g ''!*.o'' -g ''!*.png'' -g ''!*.jpeg'' -g ''!*.jpg'' -g ''!*.pkl'' --hidden --glob ""'
 "     let g:ctrlp_use_caching = 0
 " endif
-
-" YouCompleteMe
-" let g:ycm_python_binary_path = 'python3'
-" let g:ycm_global_ycm_extra_conf='~/.ycm_extra_conf.py'
-" let g:ycm_autoclose_preview_window_after_completion = 1
-" let g:ycm_semantic_triggers = {
-"     \ 'haskell' : ['.'],
-"     \ 'rust' : ['.'],
-" \ }
-" nnoremap <leader>jd :YcmCompleter GoTo<CR>
-" nnoremap <leader>jt :YcmCompleter GetType<CR>
 
 " coc.vim config
 nmap <silent> gd <Plug>(coc-definition)
@@ -176,10 +164,22 @@ inoremap <silent><expr> <TAB>
 inoremap <expr><S-TAB> pumvisible() ? "\<C-p>" : "\<C-h>"
 
 if has('nvim')
-  inoremap <silent><expr> <c-space> coc#refresh()
+    inoremap <silent><expr> <c-space> coc#refresh()
 else
-  inoremap <silent><expr> <c-@> coc#refresh()
+    inoremap <silent><expr> <c-@> coc#refresh()
 endif
+
+nnoremap <silent> K :call <SID>show_documentation()<CR>
+
+function! s:show_documentation()
+    if (index(['vim','help'], &filetype) >= 0)
+        execute 'h '.expand('<cword>')
+    elseif (coc#rpc#ready())
+        call CocActionAsync('doHover')
+    else
+        execute '!' . &keywordprg . " " . expand('<cword>')
+    endif
+endfunction
 
 " ale
 let g:ale_linters_explicit = 1
@@ -229,4 +229,3 @@ require'nvim-treesitter.configs'.setup {
 }
 require('telescope').load_extension('fzy_native')
 EOF
-
