@@ -1,4 +1,4 @@
-mkdir $HOME/.config
+mkdir -p $HOME/.config
 
 ln -sf "$PWD/nvim" $HOME/.config/nvim
 ln -sf "$PWD/zshrc" $HOME/.zshrc
