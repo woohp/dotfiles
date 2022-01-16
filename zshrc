@@ -103,7 +103,11 @@ fpath+=("$HOME/.zsh/pure")
 autoload -U promptinit; promptinit
 prompt pure
 
-export PATH=/usr/local/opt/python/libexec/bin:/usr/local/sbin:$PATH
+
+# use homebrew's python
+if [ -n "${HOMEBREW_PREFIX+1}" ]; then
+    export PATH=$HOMEBREW_PREFIX/opt/python/libexec/bin:/usr/local/sbin:$PATH
+fi
 
 if (( ${+commands[nvim]} )); then
     alias v=nvim
@@ -123,11 +127,7 @@ export LESS='-RXF'
 # setup virtualenv
 export PIP_REQUIRE_VIRTUALENV=true
 export WORKON_HOME="$HOME/.virtualenvs"
-if [ -f /usr/local/bin/virtualenvwrapper.sh ]; then
-    source /usr/local/bin/virtualenvwrapper.sh
-elif [ -f /usr/bin/virtualenvwrapper.sh ]; then
-    source /usr/bin/virtualenvwrapper.sh
-fi
+source virtualenvwrapper.sh
 export PYTHONBREAKPOINT='ipdb.set_trace'
 
 alias gl="git log --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit"
@@ -160,3 +160,7 @@ alias scp='rsync --verbose --progress --partial'
 export ERL_AFLAGS="-kernel shell_history enabled"
 
 zstyle ':completion:*:*:nvim:*:*files' ignored-patterns '*.(so|png|jpg|jpeg|pdf)'
+
+export PIPENV_VERBOSITY=-1
+export SYSTEM_VERSION_COMPAT=1
+export KMP_DUPLICATE_LIB_OK=TRUE
