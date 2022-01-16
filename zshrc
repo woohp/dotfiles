@@ -105,16 +105,16 @@ prompt pure
 
 export PATH=/usr/local/opt/python/libexec/bin:/usr/local/sbin:$PATH
 
-if [ -x `command -v nvim` ]; then
+if (( ${+commands[nvim]} )); then
     alias v=nvim
     alias vim=nvim
     export EDITOR=nvim
-elif [ -x `command -v vim` ]; then
+elif (( ${+commands[vim]} )); then
     alias v=vim
     export EDITOR=vim
 fi
 
-if [ -x `command -v exa` ]; then
+if (( ${+commands[exa]} )); then
     alias ls=exa
 fi
 
@@ -132,7 +132,7 @@ export PYTHONBREAKPOINT='ipdb.set_trace'
 
 alias gl="git log --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit"
 
-if [ -x `command -v bat` ]; then
+if (( ${+commands[bat]} )); then
     alias cat=bat
     export BAT_THEME="Solarized (light)"
 fi
