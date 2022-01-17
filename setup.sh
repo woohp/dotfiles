@@ -1,6 +1,7 @@
 mkdir -p $HOME/.config
 
 ln -sf "$PWD/nvim" $HOME/.config/nvim
+ln -sf "$PWD/zprofile" $HOME/.zprofile
 ln -sf "$PWD/zshrc" $HOME/.zshrc
 ln -sf "$PWD/gitconfig" $HOME/.gitconfig
 ln -sf "$PWD/gitignore" $HOME/.gitignore
