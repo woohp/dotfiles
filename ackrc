@@ -1,7 +1,0 @@
---smart-case
---follow
---pager=less -R -X
-
---type-set=haml=.haml
---type-set=slim=.slim
---type-set=slim=.coffee
