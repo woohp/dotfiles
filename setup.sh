@@ -6,6 +6,7 @@ ln -sf "$PWD/zshrc" $HOME/.zshrc
 ln -sf "$PWD/gitconfig" $HOME/.gitconfig
 ln -sf "$PWD/gitignore" $HOME/.gitignore
 ln -sf "$PWD/rgignore" $HOME/.rgignore
+ln -sf "$PWD/ripgreprc" $HOME/.ripgreprc
 
 tic xterm-256color.ti
 
