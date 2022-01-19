@@ -7,3 +7,7 @@
 	excludesfile = /Users/huipeng/.gitignore
 [pull]
 	ff = only
+[diff]
+    algorithm = histogram
+[init]
+    defaultBranch = master
