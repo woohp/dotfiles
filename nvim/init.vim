@@ -40,8 +40,10 @@ Plug 'neoclide/jsonc.vim'
 Plug 'cespare/vim-toml'
 Plug 'Glench/Vim-Jinja2-Syntax'
 Plug 'evanleck/vim-svelte', {'branch': 'main'}
+Plug 'hashivim/vim-terraform'
 " Plug 'posva/vim-vue'
 Plug 'nvim-treesitter/nvim-treesitter', {'do': ':TSUpdate'}
+" Plug 'MathSquared/vim-python-sql'
 
 call plug#end()
 
@@ -134,7 +136,7 @@ nnoremap <Space> :noh<CR>
 " autocmd vimenter * NERDTree
 autocmd StdinReadPre * let s:std_in=1
 autocmd VimEnter * if argc() == 0 && !exists("s:std_in") | NERDTree | endif
-let NERDTreeIgnore = ['\.pyc$', '^__pycache__$', '\.egg-info', '^build$', 'a\.out', '\.pkl$', '\.zst$', '\.sqlite$', '\.png$', '\.h5$', '\.pb$', '\.npy$', '\.mp4$', '\.so$', '\.so.*']
+let NERDTreeIgnore = ['\.pyc$', '^__pycache__', '\.egg-info', '^build$', 'a\.out', '\.pkl$', '\.zst$', '\.sqlite$', '\.png$', '\.h5$', '\.pb$', '\.npy$', '\.mp4$', '\.so$', '\.so.*']
 " Go to previous (last accessed) window.
 autocmd VimEnter * wincmd p
 
@@ -149,6 +151,10 @@ nnoremap <c-p> <cmd>Telescope find_files<cr>
 
 " coc.vim config
 nmap <silent> gd <Plug>(coc-definition)
+nmap <silent> gy <Plug>(coc-type-definition)
+
+" Run the Code Lens action on the current line.
+nmap <leader>cl  <Plug>(coc-codelens-action)
 
 autocmd CursorHold * silent call CocActionAsync('highlight')
 
@@ -157,11 +163,11 @@ function! s:check_back_space() abort
   return !col || getline('.')[col - 1]  =~# '\s'
 endfunction
 
-inoremap <silent><expr> <TAB>
-      \ pumvisible() ? "\<C-n>" :
-      \ <SID>check_back_space() ? "\<TAB>" :
-      \ coc#refresh()
-inoremap <expr><S-TAB> pumvisible() ? "\<C-p>" : "\<C-h>"
+" inoremap <silent><expr> <TAB>
+"       \ coc#pum#visible() ? coc#pum#next(1):
+"       \ CheckBackspace() ? "\<Tab>" :
+"       \ coc#refresh()
+" inoremap <expr><S-TAB> pumvisible() ? "\<C-p>" : "\<C-h>"
 
 if has('nvim')
     inoremap <silent><expr> <c-space> coc#refresh()
@@ -200,6 +206,9 @@ let g:indent_guides_auto_colors = 0
 let g:indent_guides_guide_size = 1
 autocmd VimEnter,Colorscheme * :hi IndentGuidesOdd  ctermbg=234
 autocmd VimEnter,Colorscheme * :hi IndentGuidesEven ctermbg=235
+
+nnoremap <silent><leader>bp obreakpoint()<Esc>
+nnoremap <silent><leader>Bp Obreakpoint()<Esc>
 
 " run YAPF
 nnoremap <leader>y :call yapf#YAPF()<cr>

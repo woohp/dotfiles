@@ -1,12 +1,5 @@
 {
-  "$schema": "http://json-schema.org/draft-07/schema#",
-  "description": "Configuration file for coc.nvim",
-  "additionalProperties": false,
-  "properties": {
-    "diagnostic.displayByAle": {
-      "type": "boolean",
-      "description": "Use Ale for display diagnostics in vim, will disable coc for display diagnostics, restart required on change.",
-      "default": true
-    }
-  }
+    "diagnostic.displayByAle": true,
+    "suggest.noselect": true,
+    "codeLens.enable": true
 }
