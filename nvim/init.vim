@@ -7,7 +7,6 @@ call plug#begin('~/.local/share/nvim/plugged')
 Plug 'Shougo/vimproc.vim', {'do' : 'make'}  " required for tsuquyomi
 " Plug 'ctrlpvim/ctrlp.vim'
 Plug 'scrooloose/nerdtree'
-Plug 'vim-airline/vim-airline'
 Plug 'tpope/vim-fugitive'
 Plug 'tpope/vim-commentary'
 Plug 'mg979/vim-visual-multi'
@@ -21,6 +20,10 @@ Plug 'nvim-lua/plenary.nvim'
 " telescope
 Plug 'nvim-telescope/telescope.nvim'
 Plug 'nvim-telescope/telescope-fzy-native.nvim'
+
+Plug 'nvim-lualine/lualine.nvim'
+" If you want to have icons in your statusline choose one of these
+Plug 'kyazdani42/nvim-web-devicons'
 
 " language-related plugins
 Plug 'hynek/vim-python-pep8-indent'
@@ -165,7 +168,7 @@ nnoremap <silent><leader>Bp Obreakpoint()<Esc>
 " run YAPF
 nnoremap <leader>y :call yapf#YAPF()<cr>
 
-let g:airline_powerline_fonts = 1
+set laststatus=3
 
 " multiple cursors
 let g:multi_cursor_prev_key='<C-b>'
@@ -190,3 +193,7 @@ require'nvim-treesitter.configs'.setup {
 }
 require('telescope').load_extension('fzy_native')
 EOF
+
+lua << END
+require('lualine').setup()
+END
