@@ -1,19 +1,14 @@
-" set nocompatible
 filetype off
 
 call plug#begin('~/.local/share/nvim/plugged')
 
 " other plugins
-Plug 'Shougo/vimproc.vim', {'do' : 'make'}  " required for tsuquyomi
-" Plug 'ctrlpvim/ctrlp.vim'
 Plug 'scrooloose/nerdtree'
 Plug 'vim-airline/vim-airline'
 Plug 'tpope/vim-fugitive'
 Plug 'tpope/vim-commentary'
 Plug 'mg979/vim-visual-multi'
-" Plug 'mgedmin/pythonhelper.vim'
 Plug 'rafi/awesome-vim-colorschemes'
-Plug 'google/yapf', { 'rtp': 'plugins/vim', 'for': 'python' }
 Plug 'tpope/vim-surround'
 " dependencies for telescope
 Plug 'nvim-lua/popup.nvim'
@@ -22,26 +17,24 @@ Plug 'nvim-lua/plenary.nvim'
 Plug 'nvim-telescope/telescope.nvim'
 Plug 'nvim-telescope/telescope-fzy-native.nvim'
 
+" Plug 'konapun/vacuumline.nvim'
+" Plug 'glepnir/galaxyline.nvim', {'branch': 'main'}
 " Plug 'nvim-lualine/lualine.nvim'
 " If you want to have icons in your statusline choose one of these
-Plug 'kyazdani42/nvim-web-devicons'
+Plug 'nvim-tree/nvim-web-devicons'
 
 " language-related plugins
-Plug 'hynek/vim-python-pep8-indent'
+Plug 'Vimjas/vim-python-pep8-indent'
 Plug 'neoclide/coc.nvim', {'branch': 'release'}
-Plug 'othree/html5.vim'
 Plug 'JesseKPhillips/d.vim'
-Plug 'digitaltoad/vim-pug'
+" Plug 'digitaltoad/vim-pug'
 Plug 'dense-analysis/ale'
 " Plug 'rust-lang/rust.vim'
-Plug 'elixir-editors/vim-elixir'
-Plug 'hail2u/vim-css3-syntax'
 Plug 'gutenye/json5.vim'
 Plug 'neoclide/jsonc.vim'
 " Plug 'eagletmt/neco-ghc'
 " Plug 'cakebaker/scss-syntax.vim'
 " Plug 'racer-rust/vim-racer'
-Plug 'cespare/vim-toml'
 Plug 'Glench/Vim-Jinja2-Syntax'
 Plug 'evanleck/vim-svelte', {'branch': 'main'}
 Plug 'hashivim/vim-terraform'
@@ -167,7 +160,7 @@ nnoremap <silent><leader>bp obreakpoint()<Esc>
 nnoremap <silent><leader>Bp Obreakpoint()<Esc>
 
 " run YAPF
-nnoremap <leader>y :call yapf#YAPF()<cr>
+" nnoremap <leader>y :call yapf#YAPF()<cr>
 
 let g:airline_powerline_fonts = 1
 set laststatus=3
@@ -188,9 +181,9 @@ au BufReadPost SConstruct set syntax=python
 
 lua <<EOF
 require'nvim-treesitter.configs'.setup {
-  ensure_installed = { "python", "javascript", "typescript" }, -- one of "all", "maintained" (parsers with maintainers), or a list of languages
+  ensure_installed = { "python", "javascript", "typescript", "elixir", "heex" }, -- one of "all", "maintained" (parsers with maintainers), or a list of languages
   highlight = {
-    enable = { "python" },              -- false will disable the whole extension
+    enable = { "python", "heex" },              -- false will disable the whole extension
   },
 }
 require('telescope').load_extension('fzy_native')
