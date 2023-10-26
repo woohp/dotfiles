@@ -118,8 +118,8 @@ elif (( ${+commands[vim]} )); then
     export EDITOR=vim
 fi
 
-if (( ${+commands[exa]} )); then
-    alias ls=exa
+if (( ${+commands[eza]} )); then
+    alias ls=eza
 fi
 
 export LESS='-RXF'
