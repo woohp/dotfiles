@@ -5,6 +5,7 @@
 	amend = commit --amend --no-edit
 [core]
 	excludesfile = /Users/huipeng/.gitignore
+	pager = delta
 [pull]
 	ff = only
 [diff]
@@ -14,7 +15,6 @@
 
 
 [core]
-    pager = delta
 
 [interactive]
     diffFilter = delta --color-only
