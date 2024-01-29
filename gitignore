@@ -8,3 +8,4 @@ bower_components
 *.so
 build
 __pycache__
+.venv
