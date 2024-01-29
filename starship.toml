@@ -1,0 +1,44 @@
+format = """
+$username\
+$hostname\
+$localip\
+$directory\
+$git_branch\
+$git_commit\
+$git_status\
+$memory_usage\
+$aws\
+$direnv\
+$env_var\
+$crystal\
+$custom\
+$sudo\
+$line_break\
+$jobs\
+$status\
+$os\
+$shell\
+$character"""
+
+right_format = """
+$cmd_duration\
+$time"""
+
+scan_timeout = 10
+
+[directory]
+truncation_length = 100
+truncate_to_repo = false
+
+[time]
+# disabled = false
+
+[cmd_duration]
+# min_time = 0
+show_milliseconds = true
+
+[aws]
+disabled = true
+
+[env_var.VIRTUAL_ENV_PROMPT]
+variable = 'VIRTUAL_ENV_PROMPT'

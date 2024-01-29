@@ -100,9 +100,10 @@ source $ZSH/oh-my-zsh.sh
 # alias ohmyzsh="mate ~/.oh-my-zsh"
 
 # load the pure theme
-fpath+=("$HOME/.zsh/pure")
-autoload -U promptinit; promptinit
-prompt pure
+# fpath+=("$HOME/.zsh/pure")
+# autoload -U promptinit; promptinit
+# prompt pure
+eval "$(starship init zsh)"
 
 
 if [ -n "${HOMEBREW_PREFIX+1}" ]; then
