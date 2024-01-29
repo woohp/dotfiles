@@ -68,7 +68,11 @@ ZSH_THEME=""
 # Custom plugins may be added to ~/.oh-my-zsh/custom/plugins/
 # Example format: plugins=(rails git textmate ruby lighthouse)
 # Add wisely, as too many plugins slow down shell startup.
-source /opt/homebrew/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
+if [ -f /opt/homebrew/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh ]; then
+    source /opt/homebrew/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
+elif [ -f /usr/share/zsh/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh ]; then
+    source /usr/share/zsh/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
+fi
 plugins=(git autojump pip python virtualenvwrapper zsh-syntax-highlighting colored-man-pages ripgrep)
 
 source $ZSH/oh-my-zsh.sh
@@ -107,12 +111,13 @@ eval "$(starship init zsh)"
 
 
 if [ -n "${HOMEBREW_PREFIX+1}" ]; then
-    # use homebrew's python
-    export PATH=$HOMEBREW_PREFIX/opt/python/libexec/bin:$PATH
-
+    export PATH=$HOMEBREW_PREFIX/sbin:$PATH
     export C_INCLUDE_PATH="$HOMEBREW_PREFIX/include:$C_INCLUDE_PATH"
     export CPLUS_INCLUDE_PATH="$HOMEBREW_PREFIX/include:$CPLUS_INCLUDE_PATH"
     export LIBRARY_PATH="$HOMEBREW_PREFIX/lib:$LIBRARY_PATH"
+
+    # use homebrew's python
+    export PATH=$HOMEBREW_PREFIX/opt/python/libexec/bin:$PATH
 fi
 
 if (( ${+commands[nvim]} )); then
@@ -162,3 +167,5 @@ export PIPENV_VERBOSITY=-1
 
 # https://eclecticlight.co/2020/08/13/macos-version-numbering-isnt-so-simple/
 export SYSTEM_VERSION_COMPAT=0
+
+export CUDA_HOME=/opt/cuda/

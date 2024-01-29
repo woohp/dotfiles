@@ -8,6 +8,7 @@ ln -sf "$PWD/gitignore" $HOME/.gitignore
 ln -sf "$PWD/rgignore" $HOME/.rgignore
 ln -sf "$PWD/ripgreprc" $HOME/.ripgreprc
 ln -sf "$PWD/starship.toml" $HOME/.config/starship.toml
+ln -sf "$PWD/tmux_conf" $HOME/.tmux.conf
 
 tic xterm-256color.ti
 
