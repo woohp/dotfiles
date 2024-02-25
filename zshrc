@@ -169,3 +169,7 @@ export PIPENV_VERBOSITY=-1
 export SYSTEM_VERSION_COMPAT=0
 
 export CUDA_HOME=/opt/cuda/
+
+# use uv for pip
+unalias pip
+alias pip="uv pip"
