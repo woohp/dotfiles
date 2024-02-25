@@ -8,6 +8,8 @@
 	pager = delta
 [pull]
 	ff = only
+[push]
+	useForceIfIncludes = true
 [diff]
     algorithm = histogram
 [init]
