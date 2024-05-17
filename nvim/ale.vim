@@ -1,6 +1,6 @@
 let g:ale_linters_explicit = 1
 let g:ale_linters = {
-            \ 'python': ['flake8', 'mypy'],
+            \ 'python': ['ruff', 'mypy'],
             \ 'c++': ['clang'],
             \ 'typescript': ['tsserver'],
             \ 'javascript': ['eslint'],
