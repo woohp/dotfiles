@@ -9,6 +9,7 @@ Plug 'tpope/vim-fugitive'
 Plug 'tpope/vim-commentary'
 Plug 'mg979/vim-visual-multi'
 Plug 'rafi/awesome-vim-colorschemes'
+Plug 'Tsuzat/NeoSolarized.nvim', { 'branch': 'master' }
 Plug 'tpope/vim-surround'
 " dependencies for telescope
 Plug 'nvim-lua/popup.nvim'
@@ -114,8 +115,8 @@ set mouse=
 " highlight Pmenu ctermbg=238 gui=bold
 " set term=xterm-256color
 " colorscheme wombat2
-colorscheme flattened_light
-set termguicolors
+" colorscheme flattened_light
+" set termguicolors
 " colorscheme ayu
 
 set directory^=$HOME/.vim_swap//   " put all swap files in one place
@@ -188,3 +189,5 @@ require'nvim-treesitter.configs'.setup {
 }
 require('telescope').load_extension('fzy_native')
 EOF
+
+source ~/.config/nvim/colorscheme.vim
