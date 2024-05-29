@@ -1,5 +1,3 @@
-colorscheme NeoSolarized
-
 lua <<EOF
 local ok_status, NeoSolarized = pcall(require, "NeoSolarized")
 
@@ -28,3 +26,5 @@ NeoSolarized.setup {
   end, 
 }
 EOF
+
+colorscheme NeoSolarized
