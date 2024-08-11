@@ -73,7 +73,7 @@ if [ -f /opt/homebrew/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh 
 elif [ -f /usr/share/zsh/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh ]; then
     source /usr/share/zsh/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
 fi
-plugins=(git autojump pip python virtualenvwrapper zsh-syntax-highlighting colored-man-pages ripgrep)
+plugins=(git autojump pip python virtualenvwrapper zsh-syntax-highlighting colored-man-pages mix)
 
 source $ZSH/oh-my-zsh.sh
 
