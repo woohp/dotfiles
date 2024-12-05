@@ -1,6 +1,0 @@
-{
-    "diagnostic.displayByAle": true,
-    "suggest.noselect": true,
-    "codeLens.enable": true,
-    "svelte.enable-ts-plugin": true
-}
