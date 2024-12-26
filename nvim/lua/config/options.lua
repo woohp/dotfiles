@@ -35,3 +35,11 @@ vim.g.autoformat = true
 
 vim.g.lazyvim_python_lsp = "jedi_language_server"
 vim.g.lazyvim_python_ruff = "ruff"
+
+vim.opt.numberwidth = 4
+vim.opt.signcolumn = "auto"
+vim.opt.statuscolumn = ""
+
+vim.g.lazyvim_picker = "telescope"
+
+vim.opt.ignorecase = false
