@@ -122,7 +122,6 @@ fi
 
 if (( ${+commands[nvim]} )); then
     alias v=nvim
-    alias vim=nvim
     export EDITOR=nvim
 elif (( ${+commands[vim]} )); then
     alias v=vim
@@ -173,3 +172,7 @@ export CUDA_HOME=/opt/cuda/
 # use uv for pip
 unalias pip
 alias pip="uv pip"
+# Added by LM Studio CLI tool (lms)
+export PATH="$PATH:/Users/huipeng/.cache/lm-studio/bin"
+export PATH="/opt/homebrew/opt/llvm/bin:$PATH"
+export HOSTALIASES=~/.hosts
