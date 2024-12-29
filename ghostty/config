@@ -1,0 +1,4 @@
+theme = catppuccin-latte
+term = xterm-256color
+keybind = cmd+right=next_tab
+keybind = cmd+left=previous_tab

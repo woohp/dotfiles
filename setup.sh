@@ -9,6 +9,7 @@ ln -sf "$PWD/rgignore" $HOME/.rgignore
 ln -sf "$PWD/ripgreprc" $HOME/.ripgreprc
 ln -sf "$PWD/starship.toml" $HOME/.config/starship.toml
 ln -sf "$PWD/tmux_conf" $HOME/.tmux.conf
+ln -sf "$PWD/ghostty" $HOME/.config/ghostty
 
 tic xterm-256color.ti
 
