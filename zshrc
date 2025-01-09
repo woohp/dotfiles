@@ -152,13 +152,14 @@ function ag()
     /usr/bin/env rg -p "$@" | less -RXF
 }
 
-alias scp='rsync --verbose --progress --partial'
+alias scp='rsync --verbose --progress --partial --compress --compress-choice zstd --compress-level 2'
 
 # have iex save history
 export ERL_AFLAGS="-kernel shell_history enabled"
 
 zstyle ':completion:*:*:nvim:*:*files' ignored-patterns '*.(so|png|jpg|jpeg|pdf)'
 
+alias pi="ipython"
 alias py="ipython -i -c 'import torch; import numpy as np; import torch.nn.functional as F'"
 
 export PIPENV_VERBOSITY=-1
@@ -172,6 +173,7 @@ export CUDA_HOME=/opt/cuda/
 # use uv for pip
 unalias pip
 alias pip="uv pip"
+
 # Added by LM Studio CLI tool (lms)
 export PATH="$PATH:/Users/huipeng/.cache/lm-studio/bin"
 export PATH="/opt/homebrew/opt/llvm/bin:$PATH"
