@@ -15,8 +15,12 @@ media
 *.swp
 *.swo
 *.pt
+*.pth
 *.pkl
 *.mdb
+*.mdb-lock
+*.lmdb
+*.lmdb-lock
 *.sqlite*
 *.whl
 *.tar*
@@ -32,3 +36,4 @@ media
 *.dat
 *.tgz
 *.parquet
+*.onnx
