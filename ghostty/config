@@ -2,3 +2,5 @@ theme = catppuccin-latte
 term = xterm-256color
 keybind = cmd+right=next_tab
 keybind = cmd+left=previous_tab
+scrollback-limit = 100000000
+adjust-cursor-thickness = 3
