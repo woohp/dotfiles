@@ -43,7 +43,8 @@ vim.opt.statuscolumn = ""
 
 vim.g.lazyvim_picker = "telescope"
 
-vim.opt.ignorecase = false
+vim.opt.incsearch = true
+vim.opt.ignorecase = true
 vim.opt.smartcase = true
 
 vim.opt.list = false
