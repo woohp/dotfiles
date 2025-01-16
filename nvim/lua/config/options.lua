@@ -26,9 +26,9 @@ vim.opt.completeopt = "menu,menuone,noselect"
 
 -- make the tab key reindent the line
 -- http://smalltalk.gnu.org/blog/bonzinip/emacs-ifying-vims-autoindent
-vim.opt.cinkeys = "0{,0},0),0#,!<Tab>,;,:,o,O,e"
-vim.opt.indentkeys = "!<Tab>,o,O"
-vim.opt.cinoptions = ":0,(0,u0,W1s"
+-- vim.opt.cinkeys = "0{,0},0),0#,!<Tab>,;,:,o,O,e"
+-- vim.opt.indentkeys = "!<Tab>,o,O"
+-- vim.opt.cinoptions = ":0,(0,u0,W1s"
 
 -- LazyVim auto format
 vim.g.autoformat = true
