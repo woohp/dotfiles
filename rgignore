@@ -22,7 +22,10 @@ media
 *.tar*
 *.run
 *.deb
-**/.mypy_cache/*
+*.pdf
+*.npz
+.mypy_cache
+.ruff_cache
 *.so
 *.o
 *.so.*

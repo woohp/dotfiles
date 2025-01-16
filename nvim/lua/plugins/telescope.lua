@@ -7,13 +7,18 @@ return {
       telescope.load_extension("zf-native")
       -- telescope.load_extension("frecency")
       opts.defaults = {
-        file_ignore_patterns = {
-          "%.o$", -- Object files
-          "%.so$", -- Shared object files (Linux/macOS)
-          "%.a$", -- Static libraries
-          "%.bin$", -- Binary files
-          "%.mp4$", -- Binary files
-        },
+        -- file_ignore_patterns = {
+        --   "%.o$", -- Object files
+        --   "%.so$", -- Shared object files (Linux/macOS)
+        --   "%.a$", -- Static libraries
+        --   "%.bin$", -- Binary files
+        --   "%.mp4$", -- Binary files
+        --   "%.pdf$", -- Binary files
+        --   "%.png$", -- Binary files
+        --   -- ".mypy_cache", -- Binary files
+        --   ".ruff_cache", -- Binary files
+        --   ".pkl", -- Binary files
+        -- },
       }
     end,
     keys = {
