@@ -118,6 +118,10 @@ if [ -n "${HOMEBREW_PREFIX+1}" ]; then
 
     # use homebrew's python
     export PATH=$HOMEBREW_PREFIX/opt/python/libexec/bin:$PATH
+
+    # use autocompletion from homebrew packages
+    fpath+=("$HOMEBREW_PREFIX/share/zsh/site-functions")
+    autoload -Uz compinit && compinit
 fi
 
 if (( ${+commands[nvim]} )); then
