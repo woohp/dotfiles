@@ -37,3 +37,6 @@ media
 *.tgz
 *.parquet
 *.onnx
+
+.dotnet*
+.nv/*
