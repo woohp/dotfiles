@@ -4,7 +4,7 @@
 [alias]
 	amend = commit --amend --no-edit
 [core]
-	excludesfile = /Users/huipeng/.gitignore
+	excludesfile = ~/.gitignore
 	pager = delta
 [pull]
 	ff = only
