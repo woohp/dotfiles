@@ -2,6 +2,10 @@ return {
   {
     "neovim/nvim-lspconfig",
     opts = {
+      diagnostics = {
+        virtual_text = false,
+        virtual_lines = true,
+      },
       servers = {
         pyright = { enabled = false },
         jedi_language_server = { enabled = true },
