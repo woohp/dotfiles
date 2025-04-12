@@ -4,3 +4,7 @@ keybind = cmd+right=next_tab
 keybind = cmd+left=previous_tab
 scrollback-limit = 100000000
 adjust-cursor-thickness = 3
+font-family = JetBrainsMono NFM Regular
+font-family-bold = JetBrainsMono NFM Bold
+font-family-italic = JetBrainsMono NFM Italic
+font-family-bold-italic = JetBrainsMono NFM Bold Italic
