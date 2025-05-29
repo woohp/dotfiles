@@ -59,6 +59,19 @@ return {
         end
       end
 
+      -- Replace filetype component
+      for i, component in ipairs(opts.sections.lualine_c) do
+        if type(component) == "table" and component[1] == "filetype" then
+          opts.sections.lualine_c[i] = {
+            "filetype",
+            icon_only = false,
+            separator = "",
+            padding = { left = 1, right = 1 },
+          }
+          break
+        end
+      end
+
       opts.extensions = { "neo-tree" }
     end,
   },

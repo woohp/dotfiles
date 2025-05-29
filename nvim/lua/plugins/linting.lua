@@ -10,6 +10,8 @@ return {
       typescriptreact = { "eslint_d" },
       svelte = { "eslint_d" },
       python = { "dmypy" },
+      html = { "djlint" },
+      jinja = { "djlint" },
     },
   },
 }
