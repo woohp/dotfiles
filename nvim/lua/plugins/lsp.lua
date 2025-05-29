@@ -2,10 +2,6 @@ return {
   {
     "neovim/nvim-lspconfig",
     opts = {
-      diagnostics = {
-        virtual_text = false,
-        virtual_lines = true,
-      },
       servers = {
         pyright = { enabled = false },
         jedi_language_server = { enabled = true },
@@ -15,6 +11,9 @@ return {
             compilationDatabaseDirectory = "build",
             fallbackFlags = { "-std=c++1z", "-stdlib=libc++", "-Wall" },
           },
+        },
+        jinja_lsp = {
+          filetypes = { "jinja", "html" },
         },
       },
     },

@@ -9,7 +9,8 @@ return {
         python = { "ruff_format" }, -- or "black"
         javascript = { "biome" },
         typescript = { "biome" },
-        html = { "prettier" },
+        html = { "djlint" },
+        jinja = { "djlint" },
         css = { "biome" },
         json = { "biome" },
         cpp = { "clang-format" },
