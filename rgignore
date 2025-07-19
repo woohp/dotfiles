@@ -40,3 +40,4 @@ media
 
 .dotnet*
 .nv/*
+*.safetensors
