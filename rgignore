@@ -41,3 +41,4 @@ media
 .dotnet*
 .nv/*
 *.safetensors
+*.map
