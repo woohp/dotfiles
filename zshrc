@@ -73,7 +73,7 @@ if [ -f /opt/homebrew/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh 
 elif [ -f /usr/share/zsh/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh ]; then
     source /usr/share/zsh/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
 fi
-plugins=(git autojump pip python virtualenvwrapper zsh-syntax-highlighting colored-man-pages mix)
+plugins=(git zoxide pip python virtualenvwrapper zsh-syntax-highlighting colored-man-pages mix)
 
 source $ZSH/oh-my-zsh.sh
 
@@ -177,6 +177,9 @@ export CUDA_HOME=/opt/cuda/
 # use uv for pip
 unalias pip
 alias pip="uv pip"
+
+# switched from autojump, but still prefer j
+alias j=z
 
 # Added by LM Studio CLI tool (lms)
 export PATH="$PATH:/Users/huipeng/.cache/lm-studio/bin"
