@@ -134,6 +134,7 @@ fi
 
 if (( ${+commands[eza]} )); then
     alias ls=eza
+    export TIME_STYLE="long-iso"
 fi
 
 export LESS='-RXF'
