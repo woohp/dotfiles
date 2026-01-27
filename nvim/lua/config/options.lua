@@ -49,3 +49,8 @@ vim.opt.smartcase = true
 
 vim.opt.list = false
 -- vim.cmd([[highlight SpecialKey guifg=#cfcfcf]])
+
+vim.g.llama_config = {
+  endpoint_fim = "http://192.168.1.100:8012/infill",
+  endpoint_inst = "http://192.168.1.100:8012/v1/chat/completions",
+}
