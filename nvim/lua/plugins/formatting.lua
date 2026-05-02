@@ -5,6 +5,7 @@ return {
       -- or use a specific formatter per filetype
       formatters_by_ft = {
         python = { "ruff_format", "ruff_organize_imports" }, -- or "black"
+        elixir = { "mix" },
         javascript = { "biome" },
         typescript = { "biome" },
         html = { "djlint" },
