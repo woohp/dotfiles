@@ -73,7 +73,7 @@ if [ -f /opt/homebrew/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh 
 elif [ -f /usr/share/zsh/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh ]; then
     source /usr/share/zsh/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
 fi
-plugins=(git zoxide pip python virtualenvwrapper zsh-syntax-highlighting colored-man-pages mix)
+plugins=(git zoxide pip python virtualenvwrapper zsh-syntax-highlighting colored-man-pages mix starship)
 
 source $ZSH/oh-my-zsh.sh
 
@@ -107,7 +107,6 @@ source $ZSH/oh-my-zsh.sh
 # fpath+=("$HOME/.zsh/pure")
 # autoload -U promptinit; promptinit
 # prompt pure
-eval "$(starship init zsh)"
 
 
 if [ -n "${HOMEBREW_PREFIX+1}" ]; then
