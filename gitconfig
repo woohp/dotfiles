@@ -1,3 +1,6 @@
+[include]
+	path = ~/.config/delta/catppuccin.gitconfig
+
 [user]
 	name = Hui Peng Hu
 	email = woohp135@gmail.com
@@ -22,7 +25,9 @@
     diffFilter = delta --color-only
 
 [delta]
+    features = catppuccin-latte
     navigate = true  # use n and N to move between diff sections
+    side-by-side = true
     ; syntax-theme = "Solarized (light)"
 
 [merge]
