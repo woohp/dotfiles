@@ -185,4 +185,3 @@ export PATH="$PATH:/Users/huipeng/.cache/lm-studio/bin"
 export PATH="/opt/homebrew/opt/llvm/bin:$PATH"
 export HOSTALIASES=~/.hosts
 
-. "$HOME/.local/bin/env"
