@@ -7,9 +7,22 @@ Managed with [GNU Stow](https://www.gnu.org/software/stow/).
 
 ```sh
 brew install stow
+sudo pacman -S stow
 ```
 
-## Link dotfiles
+## Migrate an existing pre-Stow machine
+
+If the machine was previously set up with the old manual symlinks:
+
+```sh
+cd ~/dotfiles
+git pull
+./migrate.sh
+```
+
+This removes only old symlinks that point into this dotfiles checkout, then dry-runs and applies Stow.
+
+## Link dotfiles on a fresh machine
 
 From the repo root:
 
