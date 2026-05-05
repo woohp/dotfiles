@@ -148,7 +148,6 @@ alias gl="git log --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgree
 
 if (( ${+commands[bat]} )); then
     alias cat=bat
-    export BAT_THEME="Solarized (light)"
 fi
 
 function ag()
