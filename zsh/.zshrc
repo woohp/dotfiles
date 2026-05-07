@@ -162,7 +162,6 @@ export ERL_AFLAGS="-kernel shell_history enabled"
 
 zstyle ':completion:*:*:nvim:*:*files' ignored-patterns '*.(so|png|jpg|jpeg|pdf)'
 
-alias pi="ipython"
 alias py="ipython -i -c 'import torch; import numpy as np; import torch.nn.functional as F'"
 
 export PIPENV_VERBOSITY=-1
