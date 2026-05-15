@@ -1,9 +1,14 @@
 {
-  "lastChangelogVersion": "0.73.0",
+  "lastChangelogVersion": "0.74.0",
   "defaultProvider": "openai-codex",
   "defaultModel": "gpt-5.5",
+  "defaultThinkingLevel": "low",
   "packages": [
-    "git:github.com/otahontas/pi-coding-agent-catppuccin"
+    "git:github.com/otahontas/pi-coding-agent-catppuccin",
+    "npm:pi-mono-context",
+    "npm:pi-mono-btw",
+    "npm:pi-mono-ask-user-question",
+    "npm:pi-mono-sentinel"
   ],
   "theme": "catppuccin-latte"
 }
