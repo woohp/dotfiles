@@ -8,6 +8,10 @@ These are default working principles. Project-local `AGENTS.md` files take prece
 - Prefer small, focused changes. Do not refactor or polish unrelated code unless it is necessary for the task.
 - Preserve existing style and abstractions unless there is a clear reason to change them.
 - Ask when anything is unclear.
+- Do not delete/drop databases, even dev databases, if they were not created by you. If not sure, stop and ask.
+- Prefer fd, rg over find, grep
+- Prefer creating script files instead of one-off commands, especially if they are more than a few lines. Copy, edit, reuse them when appropriate. Bias towards keeping them around, you might need them again.
+- Prefer cli tools over python code if task can be solved well with cli tools.
 
 ## Code quality principles
 
