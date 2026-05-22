@@ -10,10 +10,11 @@ These are default working principles. Project-local `AGENTS.md` files override t
 - Ask when anything is unclear.
 - Do not delete or drop databases, including dev databases, unless you created them. If unsure, stop and ask.
 - Prefer `fd` and `rg` over `find` and `grep`.
-- Prefer reusable script files over one-off commands, especially for anything beyond a few lines. Copy, adapt, and keep them when useful.
 - Prefer CLI tools when they are a good fit.
 - When done with code changes, run linters and formatters and fix issues. For docs-only edits, mention any skipped checks.
 - After substantial structural changes, update the local `AGENTS.md` if needed.
+- Be efficient with your operations. Example: use cp instead of generating a copy of a file from scratch.
+  - Prefer reusable script files over one-off commands, especially for anything beyond a few lines. Copy and adapt them when useful.
 
 ## Code quality principles
 
