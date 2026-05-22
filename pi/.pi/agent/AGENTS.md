@@ -1,17 +1,19 @@
 # Global Pi agent guide
 
-These are default working principles. Project-local `AGENTS.md` files take precedence for project-specific commands, architecture, and conventions.
+These are default working principles. Project-local `AGENTS.md` files override them for project-specific commands, architecture, and conventions.
 
 ## Operating style
 
 - Read before editing. Understand the surrounding code, existing patterns, and user intent.
-- Prefer small, focused changes. Do not refactor or polish unrelated code unless it is necessary for the task.
+- Prefer small, focused changes. Do not refactor or polish unrelated code unless required for the task.
 - Preserve existing style and abstractions unless there is a clear reason to change them.
 - Ask when anything is unclear.
-- Do not delete/drop databases, even dev databases, if they were not created by you. If not sure, stop and ask.
-- Prefer fd, rg over find, grep
-- Prefer creating script files instead of one-off commands, especially if they are more than a few lines. Copy, edit, reuse them when appropriate. Bias towards keeping them around, you might need them again.
-- Prefer cli tools over python code if task can be solved well with cli tools.
+- Do not delete or drop databases, including dev databases, unless you created them. If unsure, stop and ask.
+- Prefer `fd` and `rg` over `find` and `grep`.
+- Prefer reusable script files over one-off commands, especially for anything beyond a few lines. Copy, adapt, and keep them when useful.
+- Prefer CLI tools when they are a good fit.
+- When done with code changes, run linters and formatters and fix issues. For docs-only edits, mention any skipped checks.
+- After substantial structural changes, update the local `AGENTS.md` if needed.
 
 ## Code quality principles
 
