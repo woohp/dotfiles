@@ -11,14 +11,14 @@ These are default working principles. Project-local `AGENTS.md` files override t
 - Ask when anything is unclear.
 - Do not delete or drop databases, including dev databases, unless you created them. If unsure, ask.
 - Avoid excessive defensive coding. Do not handle unrealistic edge cases, especially in code we control.
-- `fd`, `rg`, `eza`, `bat` are available; use them when appropriate.
-- Prefer CLI tools when they fit the task well.
-- When done with code changes, run linters and formatters, then fix any remaining issues they do not handle. For docs-only changes, mention any skipped checks.
-  - Do not run linters or formatters until the end. Optimize for speed during editing, even if the intermediate code is messy, and rely on formatters for cleanup
+- `fd`, `rg`, `eza`, `bat`, `ast-grep/sg` are available; use them when appropriate.
+- Prefer CLI tools when they fit the task well, over python code.
+- When done with code changes, run linters and formatters, then fix any remaining issues they do not handle.
+  - Do not run linters or formatters after every edit. Optimize for speed during editing, even if the intermediate code is messy.
 - After substantial structural changes, update the local `AGENTS.md` if needed.
 - Work efficiently. For example, prefer `cp` over recreating files from scratch.
   - Prefer reusable script files over one-off commands, especially for anything beyond a few lines. Copy and adapt them when useful.
-- Protect context usage. **Any command with unknown or potentially large output must be scoped and byte-capped.**
+- Protect context usage. Any command with unknown or potentially large output must be scoped and byte-capped. If output is large but is low noise and all important, then no need to cap.
   - Byte-cap large or unpredictable output. Line limits alone are unsafe because a single line may be huge.
 
     ```
@@ -29,11 +29,8 @@ These are default working principles. Project-local `AGENTS.md` files override t
   - Preserve exit codes when needed:
 
     ```
-    tmp="$(mktemp)"
-    COMMAND >"$tmp" 2>&1
-    status=$?
-    tail -c 5000 "$tmp"
-    rm -f "$tmp"  # optional, keep to further inspect it
+    COMMAND | tail -c 5000
+    status=${PIPESTATUS[0]}
     exit "$status"
     ```
 
