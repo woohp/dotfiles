@@ -90,6 +90,19 @@ function getVisibleText(entry: SessionEntry): { kind: string; text: string } | u
   return undefined;
 }
 
+function getInitialSelectedId(ctx: ExtensionCommandContext, nodes: VisibleNode[]): string | undefined {
+  const visibleIds = new Set(nodes.map((node) => node.id));
+  let currentId = ctx.sessionManager.getLeafId();
+
+  while (currentId) {
+    if (visibleIds.has(currentId)) return currentId;
+    const entry = ctx.sessionManager.getEntry(currentId);
+    currentId = entry?.parentId ?? undefined;
+  }
+
+  return nodes[0]?.id;
+}
+
 function buildVisibleNodes(ctx: ExtensionCommandContext): VisibleNode[] {
   const entries = ctx.sessionManager.getEntries();
   const childrenByParent = new Map<string | null, SessionEntry[]>();
@@ -158,8 +171,10 @@ export default function (pi: ExtensionAPI) {
         return;
       }
 
+      const initialSelectedId = getInitialSelectedId(ctx, nodes);
+
       const selectedId = await ctx.ui.custom<string | null>((tui, theme, _kb, done) => {
-        let index = 0;
+        let index = Math.max(0, nodes.findIndex((node) => node.id === initialSelectedId));
         let query = "";
         let cachedWidth = 0;
         let cachedLines: string[] | undefined;
