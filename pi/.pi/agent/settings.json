@@ -1,5 +1,5 @@
 {
-  "lastChangelogVersion": "0.75.4",
+  "lastChangelogVersion": "0.78.0",
   "defaultProvider": "openai-codex",
   "defaultModel": "gpt-5.5",
   "defaultThinkingLevel": "low",
@@ -8,7 +8,8 @@
     "npm:pi-mono-context",
     "npm:pi-mono-btw",
     "npm:pi-mono-ask-user-question",
-    "npm:pi-mono-sentinel"
+    "npm:pi-mono-sentinel",
+    "npm:pi-autoname"
   ],
   "theme": "catppuccin-latte"
 }
