@@ -93,9 +93,9 @@ export default function (pi: ExtensionAPI) {
 
 async function ensureAstGrep(signal?: AbortSignal) {
   try {
-    await execFileAsync("sg", ["--version"], { signal });
+    await execFileAsync(astGrepExecutable(), ["--version"], { signal });
   } catch (error: any) {
-    if (error?.code === "ENOENT") throw new Error("ast-grep executable `sg` was not found in PATH");
+    if (error?.code === "ENOENT") throw new Error(`ast-grep executable \`${astGrepExecutable()}\` was not found in PATH`);
     throw error;
   }
 }
@@ -130,7 +130,7 @@ function validateInput(kind: AstKind, name: string, replacement: string, languag
 
 async function runAstGrep(args: string[], signal?: AbortSignal): Promise<string> {
   try {
-    const { stdout } = await execFileAsync("sg", args, {
+    const { stdout } = await execFileAsync(astGrepExecutable(), args, {
       maxBuffer: 10 * 1024 * 1024,
       signal,
     });
@@ -168,6 +168,10 @@ function inferLanguage(path: string): Language {
   if (path.endsWith(".c") || path.endsWith(".h")) return "c";
   if (path.endsWith(".cc") || path.endsWith(".cpp") || path.endsWith(".cxx") || path.endsWith(".hh") || path.endsWith(".hpp") || path.endsWith(".hxx")) return "cpp";
   throw new Error("Unsupported language; pass language as one of ts, tsx, js, jsx, python, elixir, c, cpp");
+}
+
+function astGrepExecutable(): string {
+  return process.platform === "linux" ? "ast-grep" : "sg";
 }
 
 function sgLanguage(language: Language): string {
