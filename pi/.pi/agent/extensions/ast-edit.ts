@@ -106,20 +106,14 @@ async function findMatches(path: string, kind: AstKind, name: string, language: 
   }
 
   const pattern = getPattern(kind, name, language);
-  const { stdout } = await execFileAsync("sg", ["run", "--json=compact", "--lang", sgLanguage(language), "-p", pattern, path], {
-    maxBuffer: 10 * 1024 * 1024,
-    signal,
-  });
+  const stdout = await runAstGrep(["run", "--json=compact", "--lang", sgLanguage(language), "-p", pattern, path], signal);
   const trimmed = stdout.trim();
   if (!trimmed) return [];
   return JSON.parse(trimmed) as SgMatch[];
 }
 
 async function findCppFunctionMatches(path: string, name: string, signal?: AbortSignal): Promise<SgMatch[]> {
-  const { stdout } = await execFileAsync("sg", ["run", "--json=compact", "--lang", "cpp", "--kind", "function_definition", path], {
-    maxBuffer: 10 * 1024 * 1024,
-    signal,
-  });
+  const stdout = await runAstGrep(["run", "--json=compact", "--lang", "cpp", "--kind", "function_definition", path], signal);
   const trimmed = stdout.trim();
   if (!trimmed) return [];
 
@@ -134,9 +128,22 @@ function validateInput(kind: AstKind, name: string, replacement: string, languag
   getPattern(kind, name, language);
 }
 
+async function runAstGrep(args: string[], signal?: AbortSignal): Promise<string> {
+  try {
+    const { stdout } = await execFileAsync("sg", args, {
+      maxBuffer: 10 * 1024 * 1024,
+      signal,
+    });
+    return stdout;
+  } catch (error: any) {
+    if (error?.code === 1 && typeof error.stdout === "string") return error.stdout;
+    throw error;
+  }
+}
+
 function getPattern(kind: AstKind, name: string, language: Language): string {
   if (language === "python") {
-    return kind === "class" ? `class ${name}:\n    $$$BODY` : `def ${name}($$$ARGS):\n    $$$BODY`;
+    return kind === "class" ? `class ${name}` : `def ${name}`;
   }
   if (language === "elixir") {
     return kind === "class" ? `defmodule ${name} do\n  $$$BODY\nend` : `def ${name}($$$ARGS) do\n  $$$BODY\nend`;
