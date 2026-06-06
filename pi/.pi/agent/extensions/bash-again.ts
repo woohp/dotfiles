@@ -91,12 +91,6 @@ export default function (pi: ExtensionAPI) {
       const ref = typeof args.ref === "string" || typeof args.ref === "number" ? String(args.ref) : "?";
       return new Text(theme.fg("toolTitle", theme.bold("bash_again ")) + theme.fg("muted", ref), 0, 0);
     },
-    renderResult(result, _options, theme, context) {
-      const text = result.content[0];
-      const msg = text?.type === "text" ? firstLine(text.text) : "";
-      const prefix = context?.isError ? theme.fg("error", "✗ ") : theme.fg("success", "✓ ");
-      return new Text(prefix + theme.fg("muted", msg), 0, 0);
-    },
   });
 
   pi.registerTool({
@@ -177,10 +171,6 @@ function clampLimit(limit: number | undefined): number {
 function truncateLine(text: string, max: number): string {
   const oneLine = text.replace(/\s+/g, " ").trim();
   return oneLine.length > max ? `${oneLine.slice(0, max - 1)}…` : oneLine;
-}
-
-function firstLine(text: string): string {
-  return text.split("\n", 1)[0] ?? "";
 }
 
 class OutputBuffer {
