@@ -1,4 +1,4 @@
-import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { createLocalBashOperations } from "@earendil-works/pi-coding-agent";
 import { Text } from "@earendil-works/pi-tui";
 import { Type } from "typebox";
@@ -28,6 +28,15 @@ export default function (pi: ExtensionAPI) {
     if (records.length > MAX_HISTORY) records = records.slice(-MAX_HISTORY);
     return record;
   }
+
+  function reconstructState(ctx: ExtensionContext) {
+    const restored = restoreFromTranscript(ctx);
+    records = restored.records;
+    nextId = Math.max(restored.nextId, maxRecordId(records) + 1, 1);
+  }
+
+  pi.on("session_start", async (_event, ctx) => reconstructState(ctx));
+  pi.on("session_tree", async (_event, ctx) => reconstructState(ctx));
 
   pi.on("tool_result", async (event, ctx) => {
     if (event.toolName !== "bash") return;
@@ -166,6 +175,76 @@ function clampLimit(limit: number | undefined): number {
   if (limit === undefined) return DEFAULT_HISTORY_LIMIT;
   if (!Number.isFinite(limit)) return DEFAULT_HISTORY_LIMIT;
   return Math.max(1, Math.min(MAX_HISTORY, Math.floor(limit)));
+}
+
+function restoreFromTranscript(ctx: ExtensionContext): { records: BashRecord[]; nextId: number } {
+  const records: BashRecord[] = [];
+  const pendingBashCommands = new Map<string, string>();
+
+  for (const entry of ctx.sessionManager.getBranch()) {
+    if (entry.type !== "message") continue;
+    const message = entry.message as any;
+
+    if (message.role === "assistant" && Array.isArray(message.content)) {
+      for (const part of message.content) {
+        if (part?.type === "toolCall" && part.name === "bash" && typeof part.id === "string") {
+          const command = part.arguments?.command;
+          if (typeof command === "string") pendingBashCommands.set(part.id, command);
+        }
+      }
+      continue;
+    }
+
+    if (message.role !== "toolResult") continue;
+
+    if (message.toolName === "bash") {
+      const command = typeof message.toolCallId === "string" ? pendingBashCommands.get(message.toolCallId) : undefined;
+      const id = extractRefFromContent(message.content, /\[bash ref: (b\d+)\]/);
+      if (command && id) records.push({ id, command, cwd: ctx.cwd, source: "bash", timestamp: entryTimestamp(entry) });
+    }
+
+    if (message.toolName === "bash_again") {
+      const details = message.details;
+      if (isObject(details) && typeof details.ref === "string" && typeof details.command === "string" && typeof details.cwd === "string") {
+        records.push({ id: details.ref, command: details.command, cwd: details.cwd, source: "bash_again", timestamp: entryTimestamp(entry) });
+      }
+    }
+  }
+
+  const deduped = dedupeRecords(records).slice(-MAX_HISTORY);
+  return { records: deduped, nextId: maxRecordId(deduped) + 1 };
+}
+
+function dedupeRecords(records: BashRecord[]): BashRecord[] {
+  const byId = new Map<string, BashRecord>();
+  for (const record of records) byId.set(record.id, record);
+  return [...byId.values()];
+}
+
+function maxRecordId(records: BashRecord[]): number {
+  return records.reduce((max, record) => Math.max(max, Number(record.id.slice(1)) || 0), 0);
+}
+
+function extractRefFromContent(content: unknown, pattern: RegExp): string | undefined {
+  if (!Array.isArray(content)) return undefined;
+  for (const part of content) {
+    if (part?.type !== "text" || typeof part.text !== "string") continue;
+    const match = part.text.match(pattern);
+    if (match) return match[1];
+  }
+  return undefined;
+}
+
+function entryTimestamp(entry: { timestamp?: unknown }): number {
+  if (typeof entry.timestamp === "string") {
+    const timestamp = Date.parse(entry.timestamp);
+    if (Number.isFinite(timestamp)) return timestamp;
+  }
+  return Date.now();
+}
+
+function isObject(value: unknown): value is Record<string, any> {
+  return typeof value === "object" && value !== null;
 }
 
 function truncateLine(text: string, max: number): string {
