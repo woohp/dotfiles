@@ -11,7 +11,7 @@ These are default working principles. Project-local `AGENTS.md` files override t
 - Ask when anything is unclear.
 - Do not delete or drop databases, including dev databases, unless you created them. If unsure, ask.
 - Avoid excessive defensive coding. Do not handle unrealistic edge cases, especially in code we control.
-- `fd`, `rg`, `eza`, `bat`, `ast-grep/sg` are available; use them when appropriate.
+- `fd`, `rg`, `eza`, `bat`, `ast-grep/sg`, `wget`, `curl` are available; use them when appropriate.
 - Prefer CLI tools when they fit the task well, over python code.
 - When done with code changes, run linters and formatters, then fix any remaining issues they do not handle.
   - Do not run linters or formatters after every edit. Optimize for speed during editing, even if the intermediate code is messy.
