@@ -31,7 +31,7 @@ Parse the paper ID from whatever the user provides:
 ### Step 2: Fetch the machine-readable report
 
 ```bash
-curl -s "https://alphaxiv.org/overview/{PAPER_ID}.md"
+curl -s "https://alphaxiv.org/overview/{PAPER_ID}.md" > <tmp path>
 ```
 
 This returns the intermediate machine-readable report — a structured, detailed analysis of the paper optimized for LLM consumption. One call, plain markdown, no JSON parsing.
@@ -43,7 +43,7 @@ If this returns 404, the report hasn't been generated for this paper yet.
 If the report doesn't contain the specific information the user is asking about (e.g. a particular equation, table, or section), fetch the full paper text:
 
 ```bash
-curl -s "https://alphaxiv.org/abs/{PAPER_ID}.md"
+curl -s "https://alphaxiv.org/abs/{PAPER_ID}.md" > <tmp path>
 ```
 
 This returns the full extracted text of the paper as markdown. Only use this as a fallback — the report is usually sufficient.
