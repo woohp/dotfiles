@@ -30,7 +30,8 @@ export default function (pi: ExtensionAPI) {
       "Use span_edit for prose or long-line text edits where built-in edit would require restating a huge line or paragraph.",
       "span_edit requires exactly one of line or first_line: line scopes the start anchor to that exact line; first_line uses the first start anchor from that line onward.",
       "For span_edit replace, provide literal start and end anchors plus replacement content; anchors and content may be multiline. By default the replacement includes both anchors, so content should contain the desired full replacement span.",
-      "Use span_edit insert_before or insert_after to add text at an anchor; include any desired leading/trailing newlines in content explicitly."
+      "Use span_edit insert_before or insert_after to add text at an anchor; include any desired leading/trailing newlines in content explicitly.",
+      "Efficiency guidance: use the shortest stable start/end anchors that uniquely identify the intended span. first_line can be approximate, even 1, if the anchor is unique; use exact line when constraining to a specific line matters. Prefer semantic anchors like headings, labels, function names, or config keys over common words. Use include_bounds: false to preserve anchors and edit only the interior. Use dry_run: true for risky or uncertain edits."
     ],
     parameters: Type.Object({
       path: Type.String({ description: "File path to edit, relative to cwd unless absolute. A leading @ is ignored." }),
