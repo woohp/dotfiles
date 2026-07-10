@@ -121,6 +121,8 @@ if [ -n "${HOMEBREW_PREFIX+1}" ]; then
     # use autocompletion from homebrew packages
     fpath+=("$HOMEBREW_PREFIX/share/zsh/site-functions")
     autoload -Uz compinit && compinit
+
+    export HOMEBREW_NO_ASK=1
 fi
 
 if (( ${+commands[nvim]} )); then
