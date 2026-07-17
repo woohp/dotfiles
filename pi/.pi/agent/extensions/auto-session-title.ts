@@ -27,6 +27,11 @@ type TitleConfig = {
   model?: string;
 };
 
+type ConversationMessage = {
+  role: "user" | "assistant";
+  text: string;
+};
+
 export default function (pi: ExtensionAPI) {
   let eligible = false;
   let generating = false;
@@ -44,7 +49,10 @@ export default function (pi: ExtensionAPI) {
 
   pi.on("before_agent_start", (event, ctx) => {
     if (!eligible || generating || pi.getSessionName()) return;
-    void createAndSetTitle(ctx, findFirstMessage(ctx, "user") ?? event.prompt);
+    const messages = firstConversationMessages(ctx);
+    if (messages.length === 0)
+      messages.push({ role: "user", text: event.prompt });
+    void createAndSetTitle(ctx, messages);
   });
 
   pi.registerCommand("generate-title", {
@@ -55,13 +63,13 @@ export default function (pi: ExtensionAPI) {
         return;
       }
 
-      const userMessage = findFirstMessage(ctx, "user");
-      if (!userMessage) {
+      const messages = firstConversationMessages(ctx);
+      if (!messages.some((message) => message.role === "user")) {
         ctx.ui.notify("This session has no user messages to title", "warning");
         return;
       }
 
-      await createAndSetTitle(ctx, userMessage);
+      await createAndSetTitle(ctx, messages);
     },
   });
 
@@ -73,15 +81,17 @@ export default function (pi: ExtensionAPI) {
     },
   });
 
-  async function createAndSetTitle(ctx: ExtensionContext, userMessage: string) {
+  async function createAndSetTitle(
+    ctx: ExtensionContext,
+    messages: ConversationMessage[],
+  ) {
     if (generating) return;
 
     const sessionId = ctx.sessionManager.getSessionId();
-    const assistantMessage = findFirstMessage(ctx, "assistant");
     generating = true;
 
     try {
-      const title = await generateTitle(ctx, userMessage, assistantMessage);
+      const title = await generateTitle(ctx, messages);
       if (!title) throw new Error("The title model returned no text");
       if (!sessionActive) return;
       if (ctx.sessionManager.getSessionId() !== sessionId) return;
@@ -103,8 +113,7 @@ export default function (pi: ExtensionAPI) {
 
   async function generateTitle(
     ctx: ExtensionContext,
-    userMessage: string,
-    assistantMessage?: string,
+    messages: ConversationMessage[],
   ) {
     const configuredModel = await readConfiguredModel();
     const model = configuredModel
@@ -122,9 +131,9 @@ export default function (pi: ExtensionAPI) {
     if (!auth.apiKey)
       throw new Error(`No API key for ${model.provider}/${model.id}`);
 
-    const conversation = assistantMessage
-      ? `<user-message>\n${userMessage}\n</user-message>\n\n<assistant-message>\n${assistantMessage}\n</assistant-message>`
-      : `<user-message>\n${userMessage}\n</user-message>`;
+    const conversation = messages
+      .map(({ role, text }) => `<${role}-message>\n${text}\n</${role}-message>`)
+      .join("\n\n");
     const response = await completeSimple(
       model,
       {
@@ -167,17 +176,20 @@ export default function (pi: ExtensionAPI) {
   }
 }
 
-function findFirstMessage(
+function firstConversationMessages(
   ctx: ExtensionContext,
-  role: "user" | "assistant",
-): string | undefined {
+): ConversationMessage[] {
+  const messages: ConversationMessage[] = [];
   for (const entry of ctx.sessionManager.getBranch()) {
     if (entry.type !== "message") continue;
     const message = entry.message as Message;
-    if (message.role !== role) continue;
+    if (message.role !== "user" && message.role !== "assistant") continue;
     const text = messageText(message);
-    if (text) return text;
+    if (!text) continue;
+    messages.push({ role: message.role, text });
+    if (messages.length === 4) break;
   }
+  return messages;
 }
 
 function messageText(message: Message): string {
