@@ -36,12 +36,12 @@ export default function (pi: ExtensionAPI) {
       "For span_edit replace, provide literal start and optional end anchors plus replacement content. If end is omitted, replace the exact start anchor only. If end is provided, the replacement includes both anchors by default, so content should contain the desired full replacement span.",
       "Use span_edit insert_before or insert_after to add text at an anchor; include any desired leading/trailing newlines in content explicitly.",
       "Provide exactly one of content or content_path. If a call fails after content is available, span_edit saves that content to a temp file; retry with content_path pointing to that file after adjusting anchors or line scope.",
-      "Efficiency guidance: use the shortest stable start/end anchors that uniquely identify the intended span. first_line can be approximate, even 1, if the anchor is unique; use exact line when constraining to a specific line matters. Prefer semantic anchors like headings, labels, function names, or config keys over common words. Use include_bounds: false to preserve anchors and edit only the interior. Use dry_run: true for risky or uncertain edits."
+      "Efficiency guidance: prefer first_line over line when an approximate starting point is enough. first_line can be approximate, even 1, if the anchor is unique; use exact line when constraining to a specific line matters. Prefer semantic anchors like headings, labels, function names, or config keys over common words. Use the shortest stable start/end anchors that uniquely identify the intended span. Use include_bounds: false to preserve anchors and edit only the interior. Use dry_run: true for risky or uncertain edits."
     ],
     parameters: Type.Object({
       path: Type.String({ description: "File path to edit, relative to cwd unless absolute. A leading @ is ignored." }),
       line: Type.Optional(Type.Number({ description: "1-indexed line number. The start anchor must begin on this exact line; ambiguous multiple starts on the line fail." })),
-      first_line: Type.Optional(Type.Number({ description: "1-indexed line number. Use the first start anchor found from this line onward." })),
+      first_line: Type.Optional(Type.Number({ description: "1-indexed line number. Use the first start anchor found from this line onward. Prefer this over line for approximate prose edits; use 1 when the start anchor is distinctive enough." })),
       op: StringEnum(["replace", "insert_before", "insert_after"] as const),
       start: Type.String({ description: "Literal start/anchor text. May be multiline." }),
       end: Type.Optional(Type.String({ description: "Literal end text for replace. May be multiline and may appear on a later line." })),
