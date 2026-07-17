@@ -12,7 +12,7 @@ const execFileAsync = promisify(execFile);
 const IDENTIFIER = /^[A-Za-z_$][\w$]*$/;
 
 type AstKind = "class" | "function";
-type Language = "ts" | "tsx" | "js" | "jsx" | "python" | "elixir" | "c" | "cpp";
+type Language = "ts" | "tsx" | "js" | "jsx" | "python" | "elixir" | "c" | "cpp" | "rust";
 type SgMatch = {
   text: string;
   file: string;
@@ -36,7 +36,7 @@ export default function (pi: ExtensionAPI) {
       kind: StringEnum(["class", "function"] as const),
       name: Type.String({ description: "Class or function declaration name to replace." }),
       replacement: Type.String({ description: "Complete replacement source for the class or function declaration." }),
-      language: Type.Optional(StringEnum(["ts", "tsx", "js", "jsx", "python", "elixir", "c", "cpp"] as const)),
+      language: Type.Optional(StringEnum(["ts", "tsx", "js", "jsx", "python", "elixir", "c", "cpp", "rust"] as const)),
       allowMultiple: Type.Optional(Type.Boolean({ description: "Replace all matches instead of erroring on multiple matches." })),
     }),
 
@@ -102,7 +102,10 @@ async function ensureAstGrep(signal?: AbortSignal) {
 
 async function findMatches(path: string, kind: AstKind, name: string, language: Language, signal?: AbortSignal): Promise<SgMatch[]> {
   if (language === "cpp" && kind === "function") {
-    return findCppFunctionMatches(path, name, signal);
+    return findNamedKindMatches(path, "cpp", "function_definition", name, signal);
+  }
+  if (language === "rust" && kind === "function") {
+    return findNamedKindMatches(path, "rust", "function_item", name, signal);
   }
 
   const pattern = getPattern(kind, name, language);
@@ -112,8 +115,8 @@ async function findMatches(path: string, kind: AstKind, name: string, language: 
   return JSON.parse(trimmed) as SgMatch[];
 }
 
-async function findCppFunctionMatches(path: string, name: string, signal?: AbortSignal): Promise<SgMatch[]> {
-  const stdout = await runAstGrep(["run", "--json=compact", "--lang", "cpp", "--kind", "function_definition", path], signal);
+async function findNamedKindMatches(path: string, language: Language, nodeKind: string, name: string, signal?: AbortSignal): Promise<SgMatch[]> {
+  const stdout = await runAstGrep(["run", "--json=compact", "--lang", sgLanguage(language), "--kind", nodeKind, path], signal);
   const trimmed = stdout.trim();
   if (!trimmed) return [];
 
@@ -155,6 +158,9 @@ function getPattern(kind: AstKind, name: string, language: Language): string {
   if (language === "cpp") {
     return kind === "class" ? `class ${name} { public: $$$BODY }` : `$$$RET ${name}($$$ARGS) { $$$BODY }`;
   }
+  if (language === "rust") {
+    return kind === "class" ? `struct ${name} { $$$BODY }` : `fn ${name}($$$ARGS) { $$$BODY }`;
+  }
   return kind === "class" ? `class ${name} $$$BODY` : `function ${name}($$$ARGS) { $$$BODY }`;
 }
 
@@ -167,7 +173,8 @@ function inferLanguage(path: string): Language {
   if (path.endsWith(".ex") || path.endsWith(".exs")) return "elixir";
   if (path.endsWith(".c") || path.endsWith(".h")) return "c";
   if (path.endsWith(".cc") || path.endsWith(".cpp") || path.endsWith(".cxx") || path.endsWith(".hh") || path.endsWith(".hpp") || path.endsWith(".hxx")) return "cpp";
-  throw new Error("Unsupported language; pass language as one of ts, tsx, js, jsx, python, elixir, c, cpp");
+  if (path.endsWith(".rs")) return "rust";
+  throw new Error("Unsupported language; pass language as one of ts, tsx, js, jsx, python, elixir, c, cpp, rust");
 }
 
 function astGrepExecutable(): string {
@@ -179,6 +186,7 @@ function sgLanguage(language: Language): string {
   if (language === "elixir") return "elixir";
   if (language === "c") return "c";
   if (language === "cpp") return "cpp";
+  if (language === "rust") return "rust";
   if (language === "tsx") return "tsx";
   if (language === "jsx") return "jsx";
   return language;
