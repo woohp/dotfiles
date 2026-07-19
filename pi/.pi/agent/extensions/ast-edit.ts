@@ -101,6 +101,9 @@ async function ensureAstGrep(signal?: AbortSignal) {
 }
 
 async function findMatches(path: string, kind: AstKind, name: string, language: Language, signal?: AbortSignal): Promise<SgMatch[]> {
+  if (isJavaScriptLike(language)) {
+    return findJavaScriptLikeMatches(path, kind, name, language, signal);
+  }
   if (language === "cpp" && kind === "function") {
     return findNamedKindMatches(path, "cpp", "function_definition", name, signal);
   }
@@ -115,14 +118,29 @@ async function findMatches(path: string, kind: AstKind, name: string, language: 
   return JSON.parse(trimmed) as SgMatch[];
 }
 
-async function findNamedKindMatches(path: string, language: Language, nodeKind: string, name: string, signal?: AbortSignal): Promise<SgMatch[]> {
-  const stdout = await runAstGrep(["run", "--json=compact", "--lang", sgLanguage(language), "--kind", nodeKind, path], signal);
-  const trimmed = stdout.trim();
-  if (!trimmed) return [];
+async function findJavaScriptLikeMatches(path: string, kind: AstKind, name: string, language: Language, signal?: AbortSignal): Promise<SgMatch[]> {
+  const nodeKind = kind === "class" ? "class_declaration" : "function_declaration";
+  const [exports, declarations] = await Promise.all([
+    findKindMatches(path, language, "export_statement", signal),
+    findKindMatches(path, language, nodeKind, signal),
+  ]);
+  const namedExports = exports.filter((match) => jsLikeDeclarationRegex(kind, name).test(match.text));
+  const exportRanges = namedExports.map(getByteRange);
+  const namedDeclarations = declarations.filter((match) => jsLikeDeclarationRegex(kind, name).test(match.text));
+  const unexportedDeclarations = namedDeclarations.filter((match) => !isInsideAnyRange(getByteRange(match), exportRanges));
+  return [...namedExports, ...unexportedDeclarations];
+}
 
-  const matches = JSON.parse(trimmed) as SgMatch[];
+async function findNamedKindMatches(path: string, language: Language, nodeKind: string, name: string, signal?: AbortSignal): Promise<SgMatch[]> {
+  const matches = await findKindMatches(path, language, nodeKind, signal);
   const declaration = new RegExp(`(?:^|[^A-Za-z_$\\w])${escapeRegExp(name)}\\s*\\(`);
   return matches.filter((match) => declaration.test(match.text));
+}
+
+async function findKindMatches(path: string, language: Language, nodeKind: string, signal?: AbortSignal): Promise<SgMatch[]> {
+  const stdout = await runAstGrep(["run", "--json=compact", "--lang", sgLanguage(language), "--kind", nodeKind, path], signal);
+  const trimmed = stdout.trim();
+  return trimmed ? (JSON.parse(trimmed) as SgMatch[]) : [];
 }
 
 function validateInput(kind: AstKind, name: string, replacement: string, language: Language) {
@@ -179,6 +197,18 @@ function inferLanguage(path: string): Language {
 
 function astGrepExecutable(): string {
   return process.platform === "linux" ? "ast-grep" : "sg";
+}
+
+function isJavaScriptLike(language: Language): boolean {
+  return language === "ts" || language === "tsx" || language === "js" || language === "jsx";
+}
+
+function jsLikeDeclarationRegex(kind: AstKind, name: string): RegExp {
+  return new RegExp(`\\b${kind === "class" ? "class" : "function"}\\s+${escapeRegExp(name)}\\b`);
+}
+
+function isInsideAnyRange(range: { start: number; end: number }, ranges: Array<{ start: number; end: number }>): boolean {
+  return ranges.some((outer) => outer.start <= range.start && range.end <= outer.end);
 }
 
 function sgLanguage(language: Language): string {
