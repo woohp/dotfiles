@@ -25,17 +25,19 @@ export default function (pi: ExtensionAPI) {
   pi.registerTool({
     name: "ast_replace",
     label: "AST Replace",
-    description: "Replace an entire class or function declaration using ast-grep.",
-    promptSnippet: "Replace an entire class or function declaration in a file using ast-grep AST matching",
+    description: "Replace one whole named class, function, method, module, or struct.",
+    promptSnippet: "Replace a whole named class, function, method, module, or struct in a file using ast-grep AST matching",
     promptGuidelines: [
-      "Use ast_replace when replacing a whole class or function declaration; provide the complete replacement source for that declaration.",
-      "Use ast_replace with allowMultiple only when the user explicitly wants every matching declaration replaced.",
+      "Named targets only. No anonymous nodes.",
+      "Provide the whole replacement.",
+      "kind=class includes Elixir defmodule and Rust struct. C has no class.",
+      "Use allowMultiple only when all same-name matches should change.",
     ],
     parameters: Type.Object({
       path: Type.String({ description: "File path to edit, relative to cwd unless absolute. A leading @ is ignored." }),
       kind: StringEnum(["class", "function"] as const),
-      name: Type.String({ description: "Class or function declaration name to replace." }),
-      replacement: Type.String({ description: "Complete replacement source for the class or function declaration." }),
+      name: Type.String({ description: "Target name." }),
+      replacement: Type.String({ description: "Whole replacement node." }),
       language: Type.Optional(StringEnum(["ts", "tsx", "js", "jsx", "python", "elixir", "c", "cpp", "rust"] as const)),
       allowMultiple: Type.Optional(Type.Boolean({ description: "Replace all matches instead of erroring on multiple matches." })),
     }),
@@ -119,14 +121,14 @@ async function findMatches(path: string, kind: AstKind, name: string, language: 
 }
 
 async function findJavaScriptLikeMatches(path: string, kind: AstKind, name: string, language: Language, signal?: AbortSignal): Promise<SgMatch[]> {
-  const nodeKind = kind === "class" ? "class_declaration" : "function_declaration";
-  const [exports, declarations] = await Promise.all([
+  const nodeKinds = kind === "class" ? ["class_declaration", "abstract_class_declaration", "lexical_declaration"] : ["function_declaration", "generator_function_declaration", "lexical_declaration", "method_definition"];
+  const [exports, ...declarationGroups] = await Promise.all([
     findKindMatches(path, language, "export_statement", signal),
-    findKindMatches(path, language, nodeKind, signal),
+    ...nodeKinds.map((nodeKind) => findKindMatches(path, language, nodeKind, signal)),
   ]);
   const namedExports = exports.filter((match) => jsLikeDeclarationRegex(kind, name).test(match.text));
   const exportRanges = namedExports.map(getByteRange);
-  const namedDeclarations = declarations.filter((match) => jsLikeDeclarationRegex(kind, name).test(match.text));
+  const namedDeclarations = declarationGroups.flat().filter((match) => jsLikeDeclarationRegex(kind, name).test(match.text));
   const unexportedDeclarations = namedDeclarations.filter((match) => !isInsideAnyRange(getByteRange(match), exportRanges));
   return [...namedExports, ...unexportedDeclarations];
 }
@@ -204,7 +206,11 @@ function isJavaScriptLike(language: Language): boolean {
 }
 
 function jsLikeDeclarationRegex(kind: AstKind, name: string): RegExp {
-  return new RegExp(`\\b${kind === "class" ? "class" : "function"}\\s+${escapeRegExp(name)}\\b`);
+  const escapedName = escapeRegExp(name);
+  if (kind === "class") {
+    return new RegExp(`(?:\\b(?:abstract\\s+)?class\\s+${escapedName}\\b|\\b${escapedName}\\s*=\\s*class\\b)`);
+  }
+  return new RegExp(`(?:\\b(?:async\\s+)?function\\s*\\*?\\s+${escapedName}\\b|\\b${escapedName}\\s*=\\s*(?:async\\s+)?(?:function\\b|(?:\\([^)]*\\)|[A-Za-z_$][\\w$]*)\\s*=>)|(?:^|\\s)(?:static\\s+|async\\s+|\\*\\s*)*${escapedName}\\s*\\()`);
 }
 
 function isInsideAnyRange(range: { start: number; end: number }, ranges: Array<{ start: number; end: number }>): boolean {
