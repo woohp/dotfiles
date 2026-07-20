@@ -4,7 +4,11 @@ description: Review a code diff or project change
 
 # Code Review
 
-Review the diff/change described by `$ARGUMENTS`. Inspect relevant files as needed. Do not make changes unless explicitly asked.
+Review the diff/change of:
+
+`$ARGUMENTS`.
+
+Inspect relevant files as needed. Do not make changes unless explicitly asked.
 
 Perform a rigorous, practical review. Your goal is not to please the author, but to help produce correct, maintainable, idiomatic, well-designed software.
 
@@ -14,9 +18,9 @@ Review the whole change, not just isolated lines. Understand intent, nearby code
 
 Look for:
 
+- Abstractions, boundaries, coupling, ownership, cohesion
 - Bugs, edge cases, regressions, races, ordering issues
 - API/behavior changes, compatibility, rollout risks
-- Abstractions, boundaries, coupling, ownership, cohesion
 - Over/under-engineering, avoidable complexity
 - Language/framework idioms and simpler native patterns
 - Awkward, surprising, inconsistent, or hard-to-read code
