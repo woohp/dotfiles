@@ -73,7 +73,7 @@ if [ -f /opt/homebrew/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh 
 elif [ -f /usr/share/zsh/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh ]; then
     source /usr/share/zsh/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
 fi
-plugins=(colored-man-pages gcloud git mix pip python ssh starship virtualenvwrapper zoxide zsh-syntax-highlighting)
+plugins=(colored-man-pages gcloud git mise mix pip python ssh starship virtualenvwrapper zoxide zsh-syntax-highlighting)
 
 source $ZSH/oh-my-zsh.sh
 
