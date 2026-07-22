@@ -1,22 +1,22 @@
 {
-  "lastChangelogVersion": "0.80.6",
-  "defaultProvider": "openai-codex",
-  "defaultModel": "gpt-5.6-sol",
-  "defaultThinkingLevel": "low",
-  "autoSessionTitle": {
-    "model": "openai-codex/gpt-5.6-luna"
-  },
-  "packages": [
-    "git:github.com/otahontas/pi-coding-agent-catppuccin",
-    "npm:pi-mono-context",
-    "npm:pi-mono-btw",
-    "npm:pi-mono-ask-user-question",
-    "npm:pi-mono-sentinel",
-    {
-      "source": "npm:pi-subagents",
-      "skills": []
+    "lastChangelogVersion": "0.80.6",
+    "defaultProvider": "openai-codex",
+    "defaultModel": "gpt-5.6-sol",
+    "defaultThinkingLevel": "low",
+    "autoSessionTitle": {
+        "model": "openai-codex/gpt-5.6-luna"
     },
-    "npm:pi-web-access"
-  ],
-  "theme": "catppuccin-latte"
+    "packages": [
+        "git:github.com/otahontas/pi-coding-agent-catppuccin",
+        "npm:pi-mono-context",
+        "npm:pi-mono-btw",
+        "npm:pi-mono-ask-user-question",
+        "npm:pi-mono-sentinel",
+        {
+            "source": "npm:pi-subagents",
+            "skills": []
+        },
+        "npm:pi-web-access"
+    ],
+    "theme": "catppuccin-latte"
 }
