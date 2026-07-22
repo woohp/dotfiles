@@ -15,7 +15,8 @@
     {
       "source": "npm:pi-subagents",
       "skills": []
-    }
+    },
+    "npm:pi-web-access"
   ],
   "theme": "catppuccin-latte"
 }
