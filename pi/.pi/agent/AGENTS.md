@@ -41,6 +41,7 @@ These are default working principles. Project-local `AGENTS.md` files override t
   - Disable progress bars whenever possible, even temporarily.
   - Suppress excessively noisy logs whenever possible, even temporarily.
 - Do not launch subagents or delegated-agent workflows unless the user explicitly asks for subagents, delegation, or a named multi-agent workflow in the current request. Task complexity alone is not permission. If delegation seems useful but was not requested, ask for permission. Explicit approval applies to that request or workflow only; do not treat it as a standing default for later requests.
+- Keep project-local AGENTS.md files updated only with important, durable, non-obvious decisions, and not file listings, transient status, review history, or facts obvious from the code.
 
 ## Code quality principles
 
