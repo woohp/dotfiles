@@ -1,7 +1,7 @@
 {
-    "lastChangelogVersion": "0.80.6",
-    "defaultProvider": "openai-codex",
-    "defaultModel": "gpt-5.6-sol",
+    "lastChangelogVersion": "0.81.1",
+    "defaultProvider": "anthropic",
+    "defaultModel": "claude-opus-5",
     "defaultThinkingLevel": "low",
     "autoSessionTitle": {
         "model": "openai-codex/gpt-5.6-luna"
@@ -12,11 +12,19 @@
         "npm:pi-mono-btw",
         "npm:pi-mono-ask-user-question",
         "npm:pi-mono-sentinel",
-        {
-            "source": "npm:pi-subagents",
-            "skills": []
-        },
-        "npm:pi-web-access"
+        "npm:pi-web-access",
+        "npm:pi-hashline-edit"
     ],
-    "theme": "catppuccin-latte"
+    "theme": "catppuccin-latte",
+    "tokenSpeed": {
+        "tpsMedium": 15,
+        "tpsFast": 30,
+        "tpsBlazing": 45,
+        "colorSlow": "#ff4444",
+        "colorMedium": "#ffaa00",
+        "colorFast": "#00ff88",
+        "colorBlazing": "#44ddff",
+        "slidingWindow": 1000,
+        "display": "full"
+    }
 }
