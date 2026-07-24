@@ -4,7 +4,7 @@ description: Review a code diff or project change
 
 # Code Review
 
-Review the diff/change of:
+Review the following:
 
 `$ARGUMENTS`.
 
