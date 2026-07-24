@@ -181,8 +181,7 @@ alias pip="uv pip"
 # switched from autojump, but still prefer j
 alias j=z
 
-# Added by LM Studio CLI tool (lms)
-export PATH="$PATH:/Users/huipeng/.cache/lm-studio/bin"
 export PATH="/opt/homebrew/opt/llvm/bin:$PATH"
 export HOSTALIASES=~/.hosts
 
+[[ -f ~/.zshrc.local ]] && source ~/.zshrc.local
