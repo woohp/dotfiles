@@ -5,6 +5,9 @@ import { Text } from "@earendil-works/pi-tui";
 import { Type } from "typebox";
 import { execFile } from "node:child_process";
 import { readFile, writeFile } from "node:fs/promises";
+import { existsSync } from "node:fs";
+import { randomUUID } from "node:crypto";
+import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 import { promisify } from "node:util";
 
@@ -29,7 +32,8 @@ export default function (pi: ExtensionAPI) {
     promptSnippet: "Replace a whole named class, function, method, module, or struct in a file using ast-grep AST matching",
     promptGuidelines: [
       "Named targets only. No anonymous nodes.",
-      "Provide the whole replacement.",
+      "Provide exactly one of replacement or replacement_path.",
+      "If replacement fails, its content is saved to a temp file. Retry with replacement_path.",
       "kind=class includes Elixir defmodule and Rust struct. C has no class.",
       "Use allowMultiple only when all same-name matches should change.",
     ],
@@ -37,44 +41,51 @@ export default function (pi: ExtensionAPI) {
       path: Type.String({ description: "File path to edit, relative to cwd unless absolute. A leading @ is ignored." }),
       kind: StringEnum(["class", "function"] as const),
       name: Type.String({ description: "Target name." }),
-      replacement: Type.String({ description: "Whole replacement node." }),
+      replacement: Type.Optional(Type.String({ description: "Whole replacement node. Provide exactly one of replacement or replacement_path." })),
+      replacement_path: Type.Optional(Type.String({ description: "Path to a file containing the whole replacement node. Relative paths resolve from cwd. Provide exactly one of replacement or replacement_path." })),
       language: Type.Optional(StringEnum(["ts", "tsx", "js", "jsx", "python", "elixir", "c", "cpp", "rust"] as const)),
       allowMultiple: Type.Optional(Type.Boolean({ description: "Replace all matches instead of erroring on multiple matches." })),
     }),
 
     async execute(_toolCallId, params, signal, _onUpdate, ctx) {
-      await ensureAstGrep(signal);
+      const replacement = await resolveReplacement(params, ctx.cwd);
 
-      const cleanPath = params.path.replace(/^@/, "");
-      const absolutePath = resolve(ctx.cwd, cleanPath);
-      const language = params.language ?? inferLanguage(cleanPath);
-      validateInput(params.kind, params.name, params.replacement, language);
+      try {
+        await ensureAstGrep(signal);
 
-      return withFileMutationQueue(absolutePath, async () => {
-        const source = await readFile(absolutePath, "utf8");
-        const matches = await findMatches(absolutePath, params.kind, params.name, language, signal);
+        const cleanPath = params.path.replace(/^@/, "");
+        const absolutePath = resolve(ctx.cwd, cleanPath);
+        const language = params.language ?? inferLanguage(cleanPath);
+        validateInput(params.kind, params.name, replacement, language);
 
-        if (matches.length === 0) {
-          throw new Error(`No ${params.kind} declaration named ${params.name} found in ${cleanPath}`);
-        }
-        if (matches.length > 1 && !params.allowMultiple) {
-          throw new Error(`Found ${matches.length} ${params.kind} declarations named ${params.name} in ${cleanPath}; set allowMultiple=true to replace all of them`);
-        }
+        return await withFileMutationQueue(absolutePath, async () => {
+          const source = await readFile(absolutePath, "utf8");
+          const matches = await findMatches(absolutePath, params.kind, params.name, language, signal);
 
-        const ranges = matches.map(getByteRange).sort((a, b) => b.start - a.start);
-        let next = source;
-        for (const range of ranges) {
-          const replacement = reindentReplacement(params.replacement, getLineIndent(source, range.start));
-          next = `${next.slice(0, range.start)}${replacement}${next.slice(range.end)}`;
-        }
-        await writeFile(absolutePath, next, "utf8");
+          if (matches.length === 0) {
+            throw new Error(`No ${params.kind} declaration named ${params.name} found in ${cleanPath}`);
+          }
+          if (matches.length > 1 && !params.allowMultiple) {
+            throw new Error(`Found ${matches.length} ${params.kind} declarations named ${params.name} in ${cleanPath}; set allowMultiple=true to replace all of them`);
+          }
 
-        const summary = `Replaced ${ranges.length} ${params.kind} declaration${ranges.length === 1 ? "" : "s"} named ${params.name} in ${cleanPath}`;
-        return {
-          content: [{ type: "text", text: summary }],
-          details: { path: cleanPath, kind: params.kind, name: params.name, replacements: ranges.length, ranges: ranges.reverse() },
-        };
-      });
+          const ranges = matches.map(getByteRange).sort((a, b) => b.start - a.start);
+          let next = source;
+          for (const range of ranges) {
+            const reindented = reindentReplacement(replacement, getLineIndent(source, range.start));
+            next = `${next.slice(0, range.start)}${reindented}${next.slice(range.end)}`;
+          }
+          await writeFile(absolutePath, next, "utf8");
+
+          const summary = `Replaced ${ranges.length} ${params.kind} declaration${ranges.length === 1 ? "" : "s"} named ${params.name} in ${cleanPath}`;
+          return {
+            content: [{ type: "text", text: summary }],
+            details: { path: cleanPath, kind: params.kind, name: params.name, replacements: ranges.length, ranges: ranges.reverse() },
+          };
+        });
+      } catch (error) {
+        throw new Error(await makeRetryableError(error, replacement));
+      }
     },
 
     renderCall(args, theme) {
@@ -143,6 +154,24 @@ async function findKindMatches(path: string, language: Language, nodeKind: strin
   const stdout = await runAstGrep(["run", "--json=compact", "--lang", sgLanguage(language), "--kind", nodeKind, path], signal);
   const trimmed = stdout.trim();
   return trimmed ? (JSON.parse(trimmed) as SgMatch[]) : [];
+}
+
+async function resolveReplacement(params: { replacement?: string; replacement_path?: string }, cwd: string): Promise<string> {
+  const hasReplacement = params.replacement !== undefined;
+  const hasReplacementPath = params.replacement_path !== undefined;
+  if (hasReplacement === hasReplacementPath) throw new Error("Provide exactly one of replacement or replacement_path");
+  if (hasReplacement) return params.replacement!;
+
+  const cleanPath = params.replacement_path!.replace(/^@/, "");
+  return readFile(resolve(cwd, cleanPath), "utf8");
+}
+
+async function makeRetryableError(error: unknown, replacement: string): Promise<string> {
+  const tempRoot = existsSync("/tmp") ? "/tmp" : tmpdir();
+  const replacementPath = resolve(tempRoot, `ast-replace-${randomUUID().slice(0, 10)}.txt`);
+  await writeFile(replacementPath, replacement, "utf8");
+  const message = error instanceof Error ? error.message : String(error);
+  return `${message}\n\nThe replacement was saved to:\n${replacementPath}\n\nRetry ast_replace with replacement_path set to that file.`;
 }
 
 function validateInput(kind: AstKind, name: string, replacement: string, language: Language) {
