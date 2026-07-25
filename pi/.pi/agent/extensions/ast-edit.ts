@@ -117,6 +117,9 @@ async function findMatches(path: string, kind: AstKind, name: string, language: 
   if (isJavaScriptLike(language)) {
     return findJavaScriptLikeMatches(path, kind, name, language, signal);
   }
+  if (language === "elixir" && kind === "function") {
+    return findElixirFunctionMatches(path, name, signal);
+  }
   if (language === "cpp" && kind === "function") {
     return findNamedKindMatches(path, "cpp", "function_definition", name, signal);
   }
@@ -129,6 +132,19 @@ async function findMatches(path: string, kind: AstKind, name: string, language: 
   const trimmed = stdout.trim();
   if (!trimmed) return [];
   return JSON.parse(trimmed) as SgMatch[];
+}
+
+async function findElixirFunctionMatches(path: string, name: string, signal?: AbortSignal): Promise<SgMatch[]> {
+  const patterns = [
+    `def ${name}($$$ARGS) do\n  $$$BODY\nend`,
+    `def ${name}($$$ARGS) when $$$GUARD do\n  $$$BODY\nend`,
+  ];
+  const groups = await Promise.all(patterns.map(async (pattern) => {
+    const stdout = await runAstGrep(["run", "--json=compact", "--lang", "elixir", "-p", pattern, path], signal);
+    const trimmed = stdout.trim();
+    return trimmed ? (JSON.parse(trimmed) as SgMatch[]) : [];
+  }));
+  return groups.flat();
 }
 
 async function findJavaScriptLikeMatches(path: string, kind: AstKind, name: string, language: Language, signal?: AbortSignal): Promise<SgMatch[]> {
@@ -275,7 +291,7 @@ function getLineIndent(source: string, offset: number): string {
 function reindentReplacement(replacement: string, indent: string): string {
   const normalized = stripReplacementBaseIndent(replacement.trimEnd());
   const lines = normalized.split("\n");
-  return lines.map((line) => (line.length === 0 ? line : `${indent}${line}`)).join("\n");
+  return lines.map((line, index) => (index === 0 || line.length === 0 ? line : `${indent}${line}`)).join("\n");
 }
 
 function stripReplacementBaseIndent(text: string): string {
