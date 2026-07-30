@@ -35,75 +35,70 @@ export default function (pi: ExtensionAPI) {
         name: "regex_edit",
         label: "Regex Edit",
         description:
-            "Replace text selected by a line-scoped JavaScript regular expression. Replacement supports JavaScript $ templates. Matches must be unique by default; select an occurrence or all explicitly. Empty replacement deletes; zero-width patterns insert.",
+            "Replace text with a line-scoped JavaScript regex and $ templates. Matches are unique by default; select an occurrence or all explicitly. Empty replacements delete, and zero-width matches insert.",
         promptSnippet:
-            "Replace, insert, delete, or transform text using a line-scoped JavaScript regex with safe match cardinality",
+            "Replace, insert, delete, or transform text with a line-scoped JavaScript regex",
         promptGuidelines: [
-            "Use regex_edit when a textual edit needs pattern matching, flexible whitespace, multiline selection, capture-based transformation, occurrence selection, or repeated replacement.",
-            "regex_edit patterns use JavaScript RegExp syntax encoded as JSON strings, so backslashes must be escaped, for example \\s, \\b, and \\d in the resulting pattern require \\\\s, \\\\b, and \\\\d in JSON.",
-            "regex_edit start_line and end_line are optional inclusive bounds on the line where a match begins; a multiline match may extend beyond end_line.",
-            "regex_edit requires a unique match by default. Use occurrence for one 1-indexed match or all: true for every non-overlapping match; occurrence and all are mutually exclusive.",
-            "regex_edit replacement content uses JavaScript replacement templates: $1 and $<name> insert captures, $& inserts the full match, $` and $' insert the original prefix and suffix, and $$ inserts a literal dollar.",
-            "For regex_edit, use an empty replacement to delete or a zero-width lookaround pattern to insert. Provide exactly one of content or content_path.",
-            "Common regex_edit patterns: \\bfoo\\b with all: true replaces words; START[\\s\\S]*?END replaces a region; (?=anchor) inserts before an anchor; and (\\w+)-(\\d+) with $2:$1 reorders captures.",
-            "Efficiency guidance: omit line bounds when the pattern is distinctive; otherwise use the narrowest practical start_line/end_line range. Prefer short semantic patterns over broad wildcards, use lookarounds to preserve surrounding text, and use dry_run: true before broad or uncertain all: true edits.",
-            "Prefer AST-aware tools over regex_edit for structural code changes or syntax with arbitrary nesting.",
+            "Prefer regex_edit when a short unique pattern avoids restating a long target, and for repeated, flexible, multiline, or capture-based edits. Use exact anchors only when they are safer and shorter.",
+            "regex_edit uses JavaScript regex encoded in JSON, so escape backslashes (\\s becomes \\\\s). Line bounds constrain where matches begin.",
+            "regex_edit requires a unique match by default. Specify occurrence or all when needed, and use dry_run for broad all-match edits.",
+            "regex_edit replacements use JavaScript $ templates ($1, $<name>, $&, $$). Empty content deletes, and zero-width matches insert.",
+            "regex_edit examples: ^prefix.*$ with m replaces a line; \\bfoo\\b with all replaces words; START[\\s\\S]*?END replaces a block; (?=anchor) inserts; (\\w+)-(\\d+) with $2:$1 reorders.",
+            "Use AST-aware tools instead of regex_edit for structural or arbitrarily nested code.",
         ],
         parameters: Type.Object({
             path: Type.String({
                 description:
-                    "File path to edit, relative to cwd unless absolute. A leading @ is ignored.",
+                    "File path, relative to cwd unless absolute. A leading @ is ignored.",
             }),
             pattern: Type.String({
                 description:
-                    "Non-empty JavaScript regular expression source. JSON-escape backslashes, for example \\\\s for regex \\s.",
+                    "JavaScript regex source. JSON-escape backslashes (use \\\\s for regex \\s).",
             }),
             flags: Type.Optional(
                 Type.String({
                     description:
-                        "JavaScript regex flags as one string. Supports i, m, s, u, and v. Do not use g (use all) or y; d is unsupported.",
+                        "JavaScript flags: i, m, s, u, v. Use all instead of g; y and d are unsupported.",
                 }),
             ),
             start_line: Type.Optional(
                 Type.Number({
                     description:
-                        "Optional 1-indexed first line on which a match may begin. Defaults to the first line.",
+                        "First 1-indexed line where a match may begin.",
                 }),
             ),
             end_line: Type.Optional(
                 Type.Number({
-                    description:
-                        "Optional 1-indexed last line on which a match may begin. Defaults to the last line.",
+                    description: "Last 1-indexed line where a match may begin.",
                 }),
             ),
             occurrence: Type.Optional(
                 Type.Number({
                     description:
-                        "Replace only this 1-indexed match within the line scope. Mutually exclusive with all.",
+                        "Replace this 1-indexed match. Cannot combine with all.",
                 }),
             ),
             all: Type.Optional(
                 Type.Boolean({
                     description:
-                        "Replace every non-overlapping match within the line scope. Mutually exclusive with occurrence.",
+                        "Replace all non-overlapping matches. Cannot combine with occurrence.",
                 }),
             ),
             content: Type.Optional(
                 Type.String({
                     description:
-                        "Replacement template using JavaScript $ substitutions ($1, $<name>, $&, $`, $', and $$). Empty content deletes matches. Provide exactly one of content or content_path.",
+                        "JavaScript replacement template ($1, $<name>, $&, $`, $', $$). Empty content deletes. Provide exactly one of content or content_path.",
                 }),
             ),
             content_path: Type.Optional(
                 Type.String({
                     description:
-                        "Path to a file containing a JavaScript replacement template. Relative paths resolve from cwd. Provide exactly one of content or content_path.",
+                        "File containing the replacement template, relative to cwd. Provide exactly one of content or content_path.",
                 }),
             ),
             dry_run: Type.Optional(
                 Type.Boolean({
-                    description:
-                        "If true, report what would change without writing the file.",
+                    description: "Report changes without writing the file.",
                 }),
             ),
         }),
