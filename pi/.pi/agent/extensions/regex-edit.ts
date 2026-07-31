@@ -166,26 +166,18 @@ export default function (pi: ExtensionAPI) {
             let text = theme.fg("toolTitle", theme.bold("regex_edit ")) +
                 theme.fg("muted", `${path} ${scope} ${selection}`);
 
-            text += context?.expanded
-                ? renderExpandedArgs(args, theme)
-                : renderCollapsedArgs(args, theme);
+            text += renderArgs(args, theme, !!context?.expanded);
 
             return new Text(text, 0, 0);
         },
 
-        renderResult(result, options, theme, context) {
+        renderResult(result, _options, theme, context) {
             const content = result.content[0];
             const message = content?.type === "text" ? content.text : "";
             const prefix = context?.isError
                 ? theme.fg("error", "✗ ")
                 : theme.fg("success", "✓ ");
-            let text = prefix + theme.fg("muted", message);
-
-            if (options.expanded) {
-                text += renderExpandedResult(result, theme);
-            }
-
-            return new Text(text, 0, 0);
+            return new Text(prefix + theme.fg("muted", message), 0, 0);
         },
     });
 }
@@ -196,17 +188,23 @@ function renderScope(args: Record<string, unknown>) {
     return start === end ? `line ${start}` : `lines ${start}-${end}`;
 }
 
-function renderCollapsedArgs(args: Record<string, unknown>, theme: any) {
+function renderArgs(
+    args: Record<string, unknown>,
+    theme: any,
+    expanded: boolean,
+) {
     const lines = ["", `pattern: ${formatInline(args.pattern, 120)}`];
     if (typeof args.flags === "string" && args.flags) {
         lines.push(`flags: ${args.flags}`);
     }
     if (typeof args.content === "string") {
-        lines.push("content:", collapseText(args.content));
+        const content = expanded
+            ? args.content || "(empty replacement)"
+            : collapseText(args.content);
+        lines.push("", content);
     } else if (typeof args.content_path === "string") {
-        lines.push(`content_path: ${args.content_path}`);
+        lines.push("", `content_path: ${args.content_path}`);
     }
-    if (args.dry_run === true) lines.push("dry_run: true");
     return "\n" + theme.fg("muted", lines.join("\n"));
 }
 
@@ -216,49 +214,14 @@ function formatInline(value: unknown, maxChars: number) {
 }
 
 function collapseText(text: string) {
-    if (!text) return "(empty)";
-    const maxLines = 3;
-    const maxChars = 240;
+    if (!text) return "(empty replacement)";
+    const maxLines = 10;
     const lines = text.split("\n");
-    let preview = lines.slice(0, maxLines).join("\n");
-    const truncated = lines.length > maxLines || preview.length > maxChars;
-    if (preview.length > maxChars) preview = preview.slice(0, maxChars);
-    return truncated ? preview + "\n…" : preview;
-}
-
-function renderExpandedArgs(args: Record<string, unknown>, theme: any) {
-    const lines = [""];
-    appendArg(lines, "pattern", args.pattern);
-    appendArg(lines, "flags", args.flags);
-    appendArg(lines, "content", args.content);
-    appendArg(lines, "content_path", args.content_path);
-    appendArg(lines, "dry_run", args.dry_run);
-    return "\n" + theme.fg("muted", lines.join("\n"));
-}
-
-function renderExpandedResult(result: any, theme: any) {
-    const details = result.details;
-    if (!details?.previews?.length) return "";
-
-    const lines = [""];
-    for (const preview of details.previews) {
-        lines.push(`preview at line ${preview.line}:`);
-        lines.push(preview.before);
-        lines.push("[replaced]");
-        lines.push(preview.replaced);
-        lines.push("[/replaced]");
-        lines.push(preview.after);
-        lines.push("");
-    }
-    if (details.previews_truncated) lines.push("Additional previews omitted.");
-    return "\n" + theme.fg("muted", lines.join("\n"));
-}
-
-function appendArg(lines: string[], name: string, value: unknown) {
-    if (value === undefined) return;
-    lines.push(`${name}:`);
-    lines.push(typeof value === "string" ? value : String(value));
-    lines.push("");
+    const preview = lines.slice(0, maxLines).join("\n");
+    const remaining = lines.length - maxLines;
+    return remaining > 0
+        ? `${preview}\n... (${remaining} more lines)`
+        : preview;
 }
 
 function resolveContent(params: RegexEditParams, cwd: string) {
