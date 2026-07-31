@@ -166,9 +166,9 @@ export default function (pi: ExtensionAPI) {
             let text = theme.fg("toolTitle", theme.bold("regex_edit ")) +
                 theme.fg("muted", `${path} ${scope} ${selection}`);
 
-            if (context?.expanded) {
-                text += renderExpandedArgs(args, theme);
-            }
+            text += context?.expanded
+                ? renderExpandedArgs(args, theme)
+                : renderCollapsedArgs(args, theme);
 
             return new Text(text, 0, 0);
         },
@@ -194,6 +194,36 @@ function renderScope(args: Record<string, unknown>) {
     const start = typeof args.start_line === "number" ? args.start_line : 1;
     const end = typeof args.end_line === "number" ? args.end_line : "EOF";
     return start === end ? `line ${start}` : `lines ${start}-${end}`;
+}
+
+function renderCollapsedArgs(args: Record<string, unknown>, theme: any) {
+    const lines = ["", `pattern: ${formatInline(args.pattern, 120)}`];
+    if (typeof args.flags === "string" && args.flags) {
+        lines.push(`flags: ${args.flags}`);
+    }
+    if (typeof args.content === "string") {
+        lines.push("content:", collapseText(args.content));
+    } else if (typeof args.content_path === "string") {
+        lines.push(`content_path: ${args.content_path}`);
+    }
+    if (args.dry_run === true) lines.push("dry_run: true");
+    return "\n" + theme.fg("muted", lines.join("\n"));
+}
+
+function formatInline(value: unknown, maxChars: number) {
+    const text = typeof value === "string" ? JSON.stringify(value) : "?";
+    return text.length > maxChars ? text.slice(0, maxChars - 1) + "…" : text;
+}
+
+function collapseText(text: string) {
+    if (!text) return "(empty)";
+    const maxLines = 3;
+    const maxChars = 240;
+    const lines = text.split("\n");
+    let preview = lines.slice(0, maxLines).join("\n");
+    const truncated = lines.length > maxLines || preview.length > maxChars;
+    if (preview.length > maxChars) preview = preview.slice(0, maxChars);
+    return truncated ? preview + "\n…" : preview;
 }
 
 function renderExpandedArgs(args: Record<string, unknown>, theme: any) {
