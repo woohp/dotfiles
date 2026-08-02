@@ -13,6 +13,7 @@ const TITLE_PROMPT = `Generate a concise title for this coding-agent session bas
 Requirements:
 - Describe the user's main task or question.
 - When natural, include a concrete identifying detail such as a file, component, command, error, or model.
+- Prefer naming the underlying subject or task. Avoid leading with meta-actions such as "Plan," "Discuss," "Explore," "Investigate," or "Help with" unless that action is itself the main deliverable.
 - Use 3-8 words in sentence case.
 - Return only the title.
 - Do not use quotes, markdown, a trailing period, or a prefix such as "Title:".
