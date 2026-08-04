@@ -1,30 +1,31 @@
 {
-    "lastChangelogVersion": "0.81.1",
-    "defaultProvider": "openai-codex",
-    "defaultModel": "gpt-5.6-sol",
-    "defaultThinkingLevel": "low",
-    "autoSessionTitle": {
-        "model": "openai-codex/gpt-5.6-luna"
-    },
-    "packages": [
-        "git:github.com/otahontas/pi-coding-agent-catppuccin",
-        "npm:pi-mono-context",
-        "npm:pi-mono-btw",
-        "npm:pi-mono-ask-user-question",
-        "npm:pi-mono-sentinel",
-        "npm:pi-web-access",
-        "npm:pi-hashline-edit"
-    ],
-    "theme": "catppuccin-latte",
-    "tokenSpeed": {
-        "tpsMedium": 15,
-        "tpsFast": 30,
-        "tpsBlazing": 45,
-        "colorSlow": "#ff4444",
-        "colorMedium": "#ffaa00",
-        "colorFast": "#00ff88",
-        "colorBlazing": "#44ddff",
-        "slidingWindow": 1000,
-        "display": "full"
-    }
+  "lastChangelogVersion": "0.83.0",
+  "defaultProvider": "openai-codex",
+  "defaultModel": "gpt-5.6-luna",
+  "defaultThinkingLevel": "high",
+  "autoSessionTitle": {
+    "model": "openai-codex/gpt-5.6-luna"
+  },
+  "packages": [
+    "git:github.com/otahontas/pi-coding-agent-catppuccin",
+    "npm:pi-mono-context",
+    "npm:pi-mono-btw",
+    "npm:pi-mono-ask-user-question",
+    "npm:pi-mono-sentinel",
+    "npm:pi-web-access",
+    "npm:pi-hashline-edit",
+    "npm:pi-mcp-adapter"
+  ],
+  "theme": "catppuccin-latte",
+  "tokenSpeed": {
+    "tpsMedium": 15,
+    "tpsFast": 30,
+    "tpsBlazing": 45,
+    "colorSlow": "#ff4444",
+    "colorMedium": "#ffaa00",
+    "colorFast": "#00ff88",
+    "colorBlazing": "#44ddff",
+    "slidingWindow": 1000,
+    "display": "full"
+  }
 }
