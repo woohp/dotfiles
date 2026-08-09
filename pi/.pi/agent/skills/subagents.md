@@ -1,24 +1,25 @@
 ---
 name: subagents
-description: Launch, coordinate, wait for, inspect, and resume independent Pi subagents using bash and tmux.
----
+description: Launch, coordinate, wait for, inspect, and resume independent Pi subagents using bash and tmux
+------------------------------------------------------------------------------------------------------------
 
 # Subagents
 
 Use independent `pi` processes as subagents. No extension required.
 
-A worker = a stable Pi session, not a Pi process. The process can exit after each turn; resume the same worker later with its session ID.
+A worker = a stable Pi session, not a Pi process. The process may exit after each turn; resume later with the same session ID.
 
 ## Rules
 
-* One worker, no useful parallel work: run `pi -p` directly and let bash block.
+* One worker, no useful parallel work: run `pi -p` directly. Bash blocks until done.
 * Multiple workers: run each in detached tmux.
-* Give every worker its own session ID with `--session-id`.
+* Give each worker a stable ID with `--session-id`.
 * Resume with `pi --session <id>`.
-* Never use `pi -c` for subagents; "latest session" is ambiguous.
-* Never run two Pi processes against the same session at once.
-* Store completion state on disk. Do not rely on tmux existence.
-* A resumed worker sees the filesystem as it exists now. Reread files that may have changed.
+* Never use `pi -c`; "latest session" is ambiguous with multiple workers.
+* Never run two Pi processes against the same session.
+* Shell variables do not persist across separate bash tool calls. Keep IDs/paths in agent context or files.
+* Completion state lives on disk, not in shell state or tmux.
+* Resumed workers see the current filesystem. Reread files that may have changed.
 * Prefer a few substantial workers over many tiny ones.
 
 ## One worker
@@ -33,9 +34,17 @@ printf '%s\n' \
   pi --session-id "$sid" --name subagent:reviewer -p
 ```
 
-Bash blocks until Pi exits.
+The bash call returns when Pi exits.
 
-Continue the same worker later:
+First use of a new `--session-id` may print:
+
+```text
+Warning: No project session found with id '...'; creating a new session with that id.
+```
+
+This is expected.
+
+Continue later:
 
 ```bash
 printf '%s\n' \
@@ -43,11 +52,11 @@ printf '%s\n' \
   pi --session "$sid" -p
 ```
 
-The new Pi process restores the previous session. Conversation survives; process-local memory, open connections, and handles do not.
+Conversation persists. Process-local memory, open connections, and handles do not.
 
 ## Parallel workers
 
-Create one directory per delegation run:
+Create one run directory:
 
 ```bash
 run="$(date +%Y%m%d-%H%M%S)-$$"
@@ -62,12 +71,10 @@ Each worker gets:
     session-id
     prompt
     output
-    exit
-    done
+    tmux-name
+    exit        # finished, not consumed
+    done        # finished, consumed
 ```
-
-`exit` means finished but not yet consumed.
-`done` means the parent already consumed that completion.
 
 For each worker:
 
@@ -75,13 +82,15 @@ For each worker:
 worker=reviewer
 dir="$root/$worker"
 sid="$(uuidgen | tr '[:upper:]' '[:lower:]')"
+tmux_name="pi-${run}-${worker}"
 
 mkdir -p "$dir"
 printf '%s\n' "$sid" > "$dir/session-id"
 printf '%s\n' "$prompt" > "$dir/prompt"
+printf '%s\n' "$tmux_name" > "$dir/tmux-name"
 ```
 
-Create a small runner. This avoids nested tmux/shell quoting:
+Use a small runner to avoid nested shell quoting:
 
 ```bash
 cat > "$dir/run.sh" <<'EOF'
@@ -98,7 +107,7 @@ cat "$dir/prompt" |
   >"$dir/output" 2>&1
 rc=$?
 
-printf '%s\n' "$rc" >"$dir/exit.tmp"
+printf '%s\n' "$rc" > "$dir/exit.tmp"
 mv "$dir/exit.tmp" "$dir/exit"
 EOF
 
@@ -108,8 +117,6 @@ chmod +x "$dir/run.sh"
 Launch:
 
 ```bash
-tmux_name="pi-${run}-${worker}"
-
 tmux new-session -d -s "$tmux_name" \
   "SUBAGENT_CWD=$(printf %q "$PWD") \
    SUBAGENT_NAME=$(printf %q "$worker") \
@@ -117,6 +124,8 @@ tmux new-session -d -s "$tmux_name" \
 ```
 
 Repeat for other workers.
+
+Persist or remember `$root`; a later bash call will not inherit it.
 
 ## Wait for any worker
 
@@ -134,9 +143,9 @@ while :; do
 done
 ```
 
-When a worker finishes, the call returns its name.
+This returns exactly one unseen completion.
 
-If several finish together, none are lost: each still has its own `exit` file. Calling the wait command again immediately returns another.
+If several workers finish together, none are lost: each retains its own `exit` file until consumed.
 
 Read the result:
 
@@ -148,9 +157,9 @@ rc="$(cat "$dir/done")"
 cat "$dir/output"
 ```
 
-Handle it, then wait again if needed.
+React, then wait again.
 
-Do not block while the parent still has useful independent work to do.
+Do not block while the parent still has useful independent work.
 
 ## Wait for all workers
 
@@ -168,7 +177,7 @@ while :; do
 done
 ```
 
-Then consume remaining `exit` files and read all outputs.
+Then consume remaining `exit` files and read outputs.
 
 ## Resume a worker
 
@@ -182,29 +191,29 @@ printf '%s\n' \
   pi --session "$sid" -p
 ```
 
-For a resumed turn that should run concurrently, launch it through tmux again using the same session ID.
+For concurrent follow-up work, launch through tmux again using the same session.
 
-Do not resume until the previous process for that worker has exited.
+Never resume while that worker's previous Pi process is still active.
 
-`output` may be overwritten on later turns. The Pi session is the real conversation history. Preserve numbered output files only when you specifically need separate logs.
+`output` may be overwritten on later turns. The Pi session is the actual conversation history; preserve numbered logs only when needed.
 
-## Delegating work
+## Delegate well
 
-The child does not inherit the parent's conversation. Give it enough context to work independently:
+The child does not inherit the parent's conversation. Give it enough context:
 
 * objective;
 * relevant files/subsystem;
-* important constraints;
+* constraints;
 * whether to modify files or only investigate;
 * what result the parent needs.
 
-Point it at repository files instead of copying large amounts of context.
+Point it at repository files instead of copying large context.
 
 Good uses:
 
 * independent reviews;
 * separate subsystem investigations;
-* implementation + independent review;
+* implementation + review;
 * competing approaches;
 * partitioning a large search.
 
@@ -212,21 +221,22 @@ Usually 2–4 workers is enough.
 
 ## Shared filesystem
 
-Read-only workers can share the same working tree.
+Read-only workers can share one working tree.
 
-If multiple workers will modify overlapping files, coordinate ownership or use separate Git worktrees.
+If workers may edit overlapping files, coordinate ownership or use separate Git worktrees.
 
-## Inspect / failure / cancel
+## Inspect / fail / cancel
 
-A worker is finished when `exit` exists, even if the exit code is nonzero.
+A worker is finished when `exit` exists, regardless of exit code.
 
-Inspect a running worker:
+Inspect:
 
 ```bash
+tmux_name="$(cat "$dir/tmux-name")"
 tmux capture-pane -p -t "$tmux_name" -S -200
 ```
 
-Attach if useful:
+Attach:
 
 ```bash
 tmux attach -t "$tmux_name"
@@ -238,7 +248,7 @@ Cancel:
 tmux kill-session -t "$tmux_name"
 ```
 
-Killing tmux may prevent the runner from writing `exit`, so record cancellation explicitly if the parent needs completion accounting:
+Killing tmux may prevent the runner from writing `exit`. If completion accounting matters:
 
 ```bash
 printf '%s\n' cancelled > "$dir/exit.tmp"
@@ -247,26 +257,27 @@ mv "$dir/exit.tmp" "$dir/exit"
 
 ## Session semantics
 
-When a subagent turn ends:
+When a turn ends:
 
 * Pi process exits;
-* its live HTTP/WebSocket connection ends;
+* live HTTP/WebSocket connection ends;
 * process-local state disappears;
 * detached external processes may survive;
-* the Pi session remains resumable.
+* Pi session remains resumable.
 
-Resuming reconstructs conversation state; it does not resurrect the previous process.
+Resuming reconstructs conversation state; it does not resurrect the old process.
 
-Provider prompt caching may still work across resumed processes when the reconstructed prefix matches. Do not depend on it.
+Provider prompt caching may still work when reconstructed prefixes match. Do not depend on it.
 
-Long sessions may eventually be compacted by Pi, so session continuity does not guarantee every old token remains verbatim in active context.
+Long sessions may be compacted by Pi, so continuity does not guarantee every old token remains verbatim in active context.
 
 ## Invariants
 
-1. One stable session ID per logical worker.
+1. One stable session ID per worker.
 2. At most one active Pi process per session.
-3. Detached turns produce a durable completion marker or explicit cancellation marker.
-4. Completion state lives on disk.
-5. Waiting for one worker never loses other completions.
-6. Resumed workers reread potentially stale filesystem state.
-7. Never use "most recent session" as worker identity.
+3. Detached turns produce `exit`, or explicit cancellation does.
+4. `exit → done` means exactly-once completion consumption.
+5. Completion state lives on disk.
+6. Waiting for one worker never loses other completions.
+7. Resumed workers verify potentially stale filesystem state.
+8. Never use "most recent session" as worker identity.
