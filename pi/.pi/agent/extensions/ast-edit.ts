@@ -88,11 +88,15 @@ export default function (pi: ExtensionAPI) {
       }
     },
 
-    renderCall(args, theme) {
+    renderCall(args, theme, context) {
       const kind = typeof args.kind === "string" ? args.kind : "node";
       const name = typeof args.name === "string" ? args.name : "?";
       const path = typeof args.path === "string" ? args.path : "?";
-      return new Text(theme.fg("toolTitle", theme.bold("ast_replace ")) + theme.fg("muted", `${kind} ${name} in ${path}`), 0, 0);
+      let text = theme.fg("toolTitle", theme.bold("ast_replace ")) + theme.fg("muted", `${kind} ${name} in ${path}`);
+
+      text += renderArgs(args, theme, !!context?.expanded);
+
+      return new Text(text, 0, 0);
     },
 
     renderResult(result, _options, theme, context) {
@@ -102,6 +106,28 @@ export default function (pi: ExtensionAPI) {
       return new Text(prefix + theme.fg("muted", msg), 0, 0);
     },
   });
+}
+
+function renderArgs(args: Record<string, unknown>, theme: any, expanded: boolean) {
+  const lines: string[] = [];
+  if (typeof args.replacement === "string") {
+    const replacement = expanded
+      ? args.replacement || "(empty replacement)"
+      : collapseText(args.replacement);
+    lines.push("", replacement);
+  } else if (typeof args.replacement_path === "string") {
+    lines.push("", `replacement_path: ${args.replacement_path}`);
+  }
+  return lines.length > 0 ? "\n" + theme.fg("muted", lines.join("\n")) : "";
+}
+
+function collapseText(text: string) {
+  if (!text) return "(empty replacement)";
+  const maxLines = 10;
+  const lines = text.split("\n");
+  const preview = lines.slice(0, maxLines).join("\n");
+  const remaining = lines.length - maxLines;
+  return remaining > 0 ? `${preview}\n... (${remaining} more lines)` : preview;
 }
 
 async function ensureAstGrep(signal?: AbortSignal) {
