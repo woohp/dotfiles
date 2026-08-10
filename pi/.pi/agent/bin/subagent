@@ -8,30 +8,32 @@ usage() {
   cat <<'EOF'
 Usage:
   subagent launch WORKER [--cwd PATH] [--delay SECONDS] < PROMPT
+  subagent launch-next PREFIX [--cwd PATH] [--delay SECONDS] < PROMPT
   subagent resume WORKER < PROMPT
-  subagent wait-any
-  subagent wait-all
+  subagent wait-any WORKER...
+  subagent wait-all WORKER...
   subagent output WORKER
   subagent exit-code WORKER
   subagent status
   subagent cancel WORKER
 
 Commands:
-  launch       Launch a worker and print its name and session ID.
-  resume       Run a blocking follow-up turn in an existing worker session.
-  wait-any     Wait for and claim one completion, then print the worker name.
-  wait-all     Claim all remaining completions and print names as they arrive.
-  output       Print a worker's captured initial output.
-  exit-code    Print a completed worker's exit code or "cancelled".
-  status       Show each worker's current state.
-  cancel       Stop a worker and record it as cancelled.
+  launch       Launch a specifically named worker's initial turn.
+  launch-next  Atomically launch the first available PREFIX-N worker.
+  resume       Launch a follow-up turn in the same worker and tmux session.
+  wait-any     Wait for and claim one selected worker completion.
+  wait-all     Wait for and claim all selected worker completions.
+  output       Print a worker's latest turn output.
+  exit-code    Print a worker's latest turn exit code or "cancelled".
+  status       Show each worker's latest turn state.
+  cancel       Stop a running worker turn and record it as cancelled.
 
-State is scoped by PI_SESSION_ID and stored under:
+launch and resume return immediately. wait-any and wait-all are the blocking
+commands. Worker names are mandatory for waits so callers explicitly own the
+set of completions they consume.
+
+Data is scoped by PI_SESSION_ID and stored under:
   ${SUBAGENT_STATE_DIR:-$HOME/.pi/agent/subagents}/<PI_SESSION_ID>/
-
-wait-any exits 0 after claiming a worker, 1 when all workers were already
-consumed, and 2 on an error. A claimed worker's marker is moved from exit to
-done, so completions remain durable until consumed.
 EOF
 }
 
@@ -82,21 +84,118 @@ resolve_parent_dir() {
   printf '%s\n' "$parent_dir"
 }
 
+migrate_legacy_worker() {
+  local worker_dir="$1"
+  local turn_dir="$worker_dir/turns/1"
+  local file
+
+  [ ! -d "$worker_dir/turns" ] || return
+  mkdir -p "$turn_dir"
+  printf '%s\n' initial >"$turn_dir/mode"
+  printf '%s\n' 1 >"$worker_dir/latest-turn"
+
+  for file in prompt output delay exit done; do
+    [ -f "$worker_dir/$file" ] && cp "$worker_dir/$file" "$turn_dir/$file"
+  done
+  [ -f "$turn_dir/delay" ] || printf '%s\n' 0 >"$turn_dir/delay"
+}
+
 resolve_worker() {
   local parent_dir="$1"
   local worker="$2"
   local worker_dir="$parent_dir/workers/$worker"
   validate_component "worker name" "$worker"
   [ -d "$worker_dir" ] || die "worker does not exist: $worker"
+  migrate_legacy_worker "$worker_dir"
   printf '%s\n' "$worker_dir"
 }
 
+latest_turn_dir() {
+  local worker_dir="$1"
+  local turn
+  turn="$(cat "$worker_dir/latest-turn")"
+  case "$turn" in
+    ''|*[!0-9]*) die "invalid latest turn for worker: $(basename "$worker_dir")" ;;
+  esac
+  [ -d "$worker_dir/turns/$turn" ] || die "latest turn directory is missing: $turn"
+  printf '%s\n' "$worker_dir/turns/$turn"
+}
+
+write_runner() {
+  local worker_dir="$1"
+
+  cat >"$worker_dir/run.sh" <<'RUNNER'
+#!/usr/bin/env bash
+set +e
+
+worker_dir="$(cd "$(dirname "$0")" && pwd -P)"
+turn="$1"
+turn_dir="$worker_dir/turns/$turn"
+sid="$(cat "$worker_dir/session-id")"
+cwd="$(cat "$worker_dir/cwd")"
+pi_session_dir="$(cat "$worker_dir/pi-session-dir")"
+worker="$(basename "$worker_dir")"
+mode="$(cat "$turn_dir/mode")"
+delay="$(cat "$turn_dir/delay")"
+
+sleep "$delay"
+if cd "$cwd"; then
+  if [ "$mode" = initial ]; then
+    cat "$turn_dir/prompt" |
+      pi --session-dir "$pi_session_dir" \
+        --session-id "$sid" --name "subagent:$worker" -p 2>&1 |
+      tee "$turn_dir/output"
+    rc=${PIPESTATUS[1]}
+  else
+    cat "$turn_dir/prompt" |
+      pi --session-dir "$pi_session_dir" --session "$sid" -p 2>&1 |
+      tee "$turn_dir/output"
+    rc=${PIPESTATUS[1]}
+  fi
+else
+  printf 'Could not enter working directory: %s\n' "$cwd" |
+    tee "$turn_dir/output"
+  rc=125
+fi
+
+printf '%s\n' "$rc" >"$turn_dir/exit.tmp"
+mv "$turn_dir/exit.tmp" "$turn_dir/exit"
+RUNNER
+  chmod +x "$worker_dir/run.sh"
+}
+
+ensure_tmux_session() {
+  local tmux_name="$1"
+
+  if tmux has-session -t "$tmux_name" 2>/dev/null; then
+    return
+  fi
+
+  tmux new-session -d -s "$tmux_name" || return
+  tmux set-option -t "$tmux_name" remain-on-exit on >/dev/null || return
+}
+
+start_turn() {
+  local worker_dir="$1"
+  local turn="$2"
+  local tmux_name
+  tmux_name="$(cat "$worker_dir/tmux-name")"
+
+  ensure_tmux_session "$tmux_name" || return
+  tmux respawn-pane -k -t "$tmux_name:0.0" \
+    "$(printf %q "$worker_dir/run.sh") $(printf %q "$turn")"
+}
+
 launch_worker() {
+  local allocation="$1"
+  shift
   [ "$#" -ge 1 ] || die "usage: $program launch WORKER [--cwd PATH] [--delay SECONDS]"
 
-  local worker="$1"
+  local requested_name="$1"
+  local worker="$requested_name"
   local cwd="$PWD"
   local delay=0
+  local number=1
   shift
 
   while [ "$#" -gt 0 ]; do
@@ -119,7 +218,11 @@ launch_worker() {
     esac
   done
 
-  validate_component "worker name" "$worker"
+  if [ "$allocation" = next ]; then
+    validate_component "worker prefix" "$requested_name"
+  else
+    validate_component "worker name" "$worker"
+  fi
   [[ "$delay" =~ ^[0-9]+([.][0-9]+)?$ ]] || die "invalid delay: $delay"
   cwd="$(absolute_dir "$cwd")" || die "working directory does not exist: $cwd"
   require_command pi
@@ -128,129 +231,147 @@ launch_worker() {
 
   local parent_dir
   local worker_dir
+  local turn_dir
   local pi_session_dir
   local sid
   local tmux_name
   parent_dir="$(ensure_parent_dir)" || exit $?
-  worker_dir="$parent_dir/workers/$worker"
   pi_session_dir="$parent_dir/sessions"
-  mkdir "$worker_dir" 2>/dev/null || die "worker already exists: $worker"
+
+  if [ "$allocation" = next ]; then
+    while :; do
+      worker="${requested_name}-${number}"
+      worker_dir="$parent_dir/workers/$worker"
+      if mkdir "$worker_dir" 2>/dev/null; then
+        break
+      fi
+      [ -e "$worker_dir" ] || die "cannot allocate worker name with prefix: $requested_name"
+      number=$((number + 1))
+    done
+  else
+    worker_dir="$parent_dir/workers/$worker"
+    mkdir "$worker_dir" 2>/dev/null || die "worker already exists: $worker"
+  fi
+
+  turn_dir="$worker_dir/turns/1"
+  mkdir -p "$turn_dir" || die "cannot initialize worker: $worker"
 
   sid="$(uuidgen | tr '[:upper:]' '[:lower:]')"
   tmux_name="pi-subagent-${PI_SESSION_ID}-${worker}"
 
   printf '%s\n' "$sid" >"$worker_dir/session-id"
   printf '%s\n' "$cwd" >"$worker_dir/cwd"
-  printf '%s\n' "$delay" >"$worker_dir/delay"
   printf '%s\n' "$pi_session_dir" >"$worker_dir/pi-session-dir"
   printf '%s\n' "$tmux_name" >"$worker_dir/tmux-name"
-  cat >"$worker_dir/prompt"
+  printf '%s\n' 1 >"$worker_dir/latest-turn"
+  printf '%s\n' initial >"$turn_dir/mode"
+  printf '%s\n' "$delay" >"$turn_dir/delay"
+  cat >"$turn_dir/prompt"
+  write_runner "$worker_dir"
 
-  cat >"$worker_dir/run.sh" <<'RUNNER'
-#!/usr/bin/env bash
-set +e
-
-worker_dir="$(cd "$(dirname "$0")" && pwd -P)"
-sid="$(cat "$worker_dir/session-id")"
-cwd="$(cat "$worker_dir/cwd")"
-delay="$(cat "$worker_dir/delay")"
-pi_session_dir="$(cat "$worker_dir/pi-session-dir")"
-worker="$(basename "$worker_dir")"
-
-sleep "$delay"
-if cd "$cwd"; then
-  cat "$worker_dir/prompt" |
-    pi --session-dir "$pi_session_dir" \
-      --session-id "$sid" --name "subagent:$worker" -p \
-      >"$worker_dir/output" 2>&1
-  rc=$?
-else
-  printf 'Could not enter working directory: %s\n' "$cwd" >"$worker_dir/output"
-  rc=125
-fi
-
-printf '%s\n' "$rc" >"$worker_dir/exit.tmp"
-mv "$worker_dir/exit.tmp" "$worker_dir/exit"
-RUNNER
-  chmod +x "$worker_dir/run.sh"
-
-  if ! tmux new-session -d -s "$tmux_name" "$(printf %q "$worker_dir/run.sh")"; then
-    printf '%s\n' 125 >"$worker_dir/exit"
+  if ! start_turn "$worker_dir" 1; then
+    printf '%s\n' 125 >"$turn_dir/exit"
     die "failed to launch worker: $worker"
   fi
 
-  printf 'WORKER=%s\nSESSION_ID=%s\n' "$worker" "$sid"
+  printf 'WORKER=%s\nTURN=1\nSESSION_ID=%s\n' "$worker" "$sid"
 }
 
 resume_worker() {
   [ "$#" -eq 1 ] || die "usage: $program resume WORKER"
 
+  require_command pi
+  require_command tmux
+
   local parent_dir
   local worker_dir
-  local pi_session_dir
+  local previous_turn_dir
+  local previous_turn
+  local turn
+  local turn_dir
   local sid
-  local cwd
   parent_dir="$(resolve_parent_dir)" || exit $?
   worker_dir="$(resolve_worker "$parent_dir" "$1")" || exit $?
+  previous_turn_dir="$(latest_turn_dir "$worker_dir")" || exit $?
+  previous_turn="$(cat "$worker_dir/latest-turn")"
 
-  if [ ! -f "$worker_dir/exit" ] && [ ! -f "$worker_dir/done" ]; then
-    die "worker is still running: $1"
+  if [ -f "$previous_turn_dir/exit" ]; then
+    die "worker completion is unconsumed; call wait-any or wait-all first: $1"
+  fi
+  [ -f "$previous_turn_dir/done" ] || die "worker is still running: $1"
+
+  turn=$((previous_turn + 1))
+  turn_dir="$worker_dir/turns/$turn"
+  mkdir "$turn_dir" || die "cannot create turn $turn for worker: $1"
+  printf '%s\n' resume >"$turn_dir/mode"
+  printf '%s\n' 0 >"$turn_dir/delay"
+  cat >"$turn_dir/prompt"
+  printf '%s\n' "$turn" >"$worker_dir/latest-turn.tmp"
+  mv "$worker_dir/latest-turn.tmp" "$worker_dir/latest-turn"
+  write_runner "$worker_dir"
+
+  if ! start_turn "$worker_dir" "$turn"; then
+    printf '%s\n' 125 >"$turn_dir/exit"
+    die "failed to resume worker: $1"
   fi
 
-  require_command pi
   sid="$(cat "$worker_dir/session-id")"
-  cwd="$(cat "$worker_dir/cwd")"
-  cd "$cwd" || die "working directory does not exist: $cwd"
+  printf 'WORKER=%s\nTURN=%s\nSESSION_ID=%s\n' "$1" "$turn" "$sid"
+}
 
-  if [ -f "$worker_dir/pi-session-dir" ]; then
-    pi_session_dir="$(cat "$worker_dir/pi-session-dir")"
-    pi --session-dir "$pi_session_dir" --session "$sid" -p
-  else
-    # Workers created before isolated session storage used Pi's default directory.
-    pi --session "$sid" -p
-  fi
+selected_turns() {
+  local parent_dir="$1"
+  shift
+  local worker
+  local worker_dir
+  local turn_dir
+
+  for worker in "$@"; do
+    worker_dir="$(resolve_worker "$parent_dir" "$worker")" || exit $?
+    turn_dir="$(latest_turn_dir "$worker_dir")" || exit $?
+    printf '%s\t%s\n' "$worker" "$turn_dir"
+  done
 }
 
 wait_any() {
-  [ "$#" -eq 0 ] || die "usage: $program wait-any"
+  [ "$#" -ge 1 ] || die "usage: $program wait-any WORKER..."
 
   local parent_dir
-  local worker_dir
-  local workers
+  local selected
+  local worker
+  local turn_dir
   local unfinished
   parent_dir="$(resolve_parent_dir)" || exit $?
+  selected="$(selected_turns "$parent_dir" "$@")" || exit $?
 
   while :; do
-    workers=0
     unfinished=0
 
-    for worker_dir in "$parent_dir/workers"/*; do
-      [ -d "$worker_dir" ] || continue
-      workers=$((workers + 1))
+    while IFS=$'\t' read -r worker turn_dir; do
+      [ -n "$worker" ] || continue
 
-      if [ -f "$worker_dir/exit" ]; then
-        if mv "$worker_dir/exit" "$worker_dir/done" 2>/dev/null; then
-          basename "$worker_dir"
+      if [ -f "$turn_dir/exit" ]; then
+        if mv "$turn_dir/exit" "$turn_dir/done" 2>/dev/null; then
+          printf '%s\n' "$worker"
           return 0
         fi
       fi
 
-      [ -f "$worker_dir/done" ] || unfinished=$((unfinished + 1))
-    done
+      [ -f "$turn_dir/done" ] || unfinished=$((unfinished + 1))
+    done <<<"$selected"
 
-    [ "$workers" -gt 0 ] || die "this Pi session has no subagent workers"
     [ "$unfinished" -gt 0 ] || return 1
     sleep 0.2
   done
 }
 
 wait_all() {
-  [ "$#" -eq 0 ] || die "usage: $program wait-all"
+  [ "$#" -ge 1 ] || die "usage: $program wait-all WORKER..."
 
   local worker
   local rc
   while :; do
-    worker="$(wait_any)"
+    worker="$(wait_any "$@")"
     rc=$?
     case "$rc" in
       0) printf '%s\n' "$worker" ;;
@@ -265,10 +386,12 @@ worker_output() {
 
   local parent_dir
   local worker_dir
+  local turn_dir
   parent_dir="$(resolve_parent_dir)" || exit $?
   worker_dir="$(resolve_worker "$parent_dir" "$1")" || exit $?
-  [ -f "$worker_dir/output" ] || die "worker has no output yet: $1"
-  cat "$worker_dir/output"
+  turn_dir="$(latest_turn_dir "$worker_dir")" || exit $?
+  [ -f "$turn_dir/output" ] || die "worker has no output for its latest turn: $1"
+  cat "$turn_dir/output"
 }
 
 worker_exit_code() {
@@ -276,31 +399,33 @@ worker_exit_code() {
 
   local parent_dir
   local worker_dir
+  local turn_dir
   parent_dir="$(resolve_parent_dir)" || exit $?
   worker_dir="$(resolve_worker "$parent_dir" "$1")" || exit $?
+  turn_dir="$(latest_turn_dir "$worker_dir")" || exit $?
 
-  if [ -f "$worker_dir/done" ]; then
-    cat "$worker_dir/done"
-  elif [ -f "$worker_dir/exit" ]; then
-    cat "$worker_dir/exit"
+  if [ -f "$turn_dir/done" ]; then
+    cat "$turn_dir/done"
+  elif [ -f "$turn_dir/exit" ]; then
+    cat "$turn_dir/exit"
   else
-    die "worker has not completed: $1"
+    die "worker has not completed its latest turn: $1"
   fi
 }
 
-worker_state() {
-  local worker_dir="$1"
+turn_state() {
+  local turn_dir="$1"
   local marker
 
-  if [ -f "$worker_dir/done" ]; then
-    marker="$(cat "$worker_dir/done")"
+  if [ -f "$turn_dir/done" ]; then
+    marker="$(cat "$turn_dir/done")"
     if [ "$marker" = cancelled ]; then
       printf 'cancelled\t%s\n' "$marker"
     else
       printf 'consumed\t%s\n' "$marker"
     fi
-  elif [ -f "$worker_dir/exit" ]; then
-    marker="$(cat "$worker_dir/exit")"
+  elif [ -f "$turn_dir/exit" ]; then
+    marker="$(cat "$turn_dir/exit")"
     if [ "$marker" = cancelled ]; then
       printf 'cancelled\t%s\n' "$marker"
     else
@@ -316,20 +441,26 @@ run_status() {
 
   local parent_dir
   local worker_dir
+  local turn_dir
+  local turn
   local found=0
   local status_and_exit
   local worker_status
   local code
   parent_dir="$(resolve_parent_dir)" || exit $?
 
-  printf '%-20s %-10s %s\n' WORKER STATE EXIT
+  printf '%-20s %-6s %-10s %s\n' WORKER TURN STATE EXIT
   for worker_dir in "$parent_dir/workers"/*; do
     [ -d "$worker_dir" ] || continue
+    migrate_legacy_worker "$worker_dir"
     found=1
-    status_and_exit="$(worker_state "$worker_dir")"
+    turn="$(cat "$worker_dir/latest-turn")"
+    turn_dir="$(latest_turn_dir "$worker_dir")" || exit $?
+    status_and_exit="$(turn_state "$turn_dir")"
     worker_status="${status_and_exit%%	*}"
     code="${status_and_exit#*	}"
-    printf '%-20s %-10s %s\n' "$(basename "$worker_dir")" "$worker_status" "$code"
+    printf '%-20s %-6s %-10s %s\n' \
+      "$(basename "$worker_dir")" "$turn" "$worker_status" "$code"
   done
 
   [ "$found" -eq 1 ] || printf '%s\n' '(no workers)'
@@ -340,18 +471,20 @@ cancel_worker() {
 
   local parent_dir
   local worker_dir
+  local turn_dir
   local tmux_name
   parent_dir="$(resolve_parent_dir)" || exit $?
   worker_dir="$(resolve_worker "$parent_dir" "$1")" || exit $?
+  turn_dir="$(latest_turn_dir "$worker_dir")" || exit $?
 
-  if [ -f "$worker_dir/exit" ] || [ -f "$worker_dir/done" ]; then
-    die "worker is already complete: $1"
+  if [ -f "$turn_dir/exit" ] || [ -f "$turn_dir/done" ]; then
+    die "worker's latest turn is already complete: $1"
   fi
 
   tmux_name="$(cat "$worker_dir/tmux-name")"
   tmux kill-session -t "$tmux_name" 2>/dev/null || true
-  printf '%s\n' cancelled >"$worker_dir/exit.tmp"
-  mv "$worker_dir/exit.tmp" "$worker_dir/exit"
+  printf '%s\n' cancelled >"$turn_dir/exit.tmp"
+  mv "$turn_dir/exit.tmp" "$turn_dir/exit"
   printf '%s\n' "$1"
 }
 
@@ -365,7 +498,8 @@ main() {
   shift
 
   case "$command" in
-    launch) launch_worker "$@" ;;
+    launch) launch_worker exact "$@" ;;
+    launch-next) launch_worker next "$@" ;;
     resume) resume_worker "$@" ;;
     wait-any) wait_any "$@" ;;
     wait-all) wait_all "$@" ;;
