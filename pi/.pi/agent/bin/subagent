@@ -58,36 +58,37 @@ validate_component() {
   esac
 }
 
-session_state() {
-  local session_id="${PI_SESSION_ID:-}"
-  local state_root="${SUBAGENT_STATE_DIR:-$HOME/.pi/agent/subagents}"
+subagent_parent_dir() {
+  local parent_session_id="${PI_SESSION_ID:-}"
+  local subagent_root="${SUBAGENT_STATE_DIR:-$HOME/.pi/agent/subagents}"
 
-  [ -n "$session_id" ] || die "PI_SESSION_ID is not set"
-  validate_component "PI session ID" "$session_id"
-  printf '%s/%s\n' "$state_root" "$session_id"
+  [ -n "$parent_session_id" ] || die "PI_SESSION_ID is not set"
+  validate_component "PI session ID" "$parent_session_id"
+  printf '%s/%s\n' "$subagent_root" "$parent_session_id"
 }
 
-ensure_state() {
-  local state
-  state="$(session_state)" || exit $?
-  mkdir -p "$state/workers" || die "cannot create state directory: $state"
-  printf '%s\n' "$state"
+ensure_parent_dir() {
+  local parent_dir
+  parent_dir="$(subagent_parent_dir)" || exit $?
+  mkdir -p "$parent_dir/workers" "$parent_dir/sessions" ||
+    die "cannot create subagent directory: $parent_dir"
+  printf '%s\n' "$parent_dir"
 }
 
-resolve_state() {
-  local state
-  state="$(session_state)" || exit $?
-  [ -d "$state/workers" ] || die "this Pi session has no subagent workers"
-  printf '%s\n' "$state"
+resolve_parent_dir() {
+  local parent_dir
+  parent_dir="$(subagent_parent_dir)" || exit $?
+  [ -d "$parent_dir/workers" ] || die "this Pi session has no subagent workers"
+  printf '%s\n' "$parent_dir"
 }
 
 resolve_worker() {
-  local state="$1"
+  local parent_dir="$1"
   local worker="$2"
-  local dir="$state/workers/$worker"
+  local worker_dir="$parent_dir/workers/$worker"
   validate_component "worker name" "$worker"
-  [ -d "$dir" ] || die "worker does not exist: $worker"
-  printf '%s\n' "$dir"
+  [ -d "$worker_dir" ] || die "worker does not exist: $worker"
+  printf '%s\n' "$worker_dir"
 }
 
 launch_worker() {
@@ -125,51 +126,56 @@ launch_worker() {
   require_command tmux
   require_command uuidgen
 
-  local state
-  local dir
+  local parent_dir
+  local worker_dir
+  local pi_session_dir
   local sid
   local tmux_name
-  state="$(ensure_state)" || exit $?
-  dir="$state/workers/$worker"
-  mkdir "$dir" 2>/dev/null || die "worker already exists: $worker"
+  parent_dir="$(ensure_parent_dir)" || exit $?
+  worker_dir="$parent_dir/workers/$worker"
+  pi_session_dir="$parent_dir/sessions"
+  mkdir "$worker_dir" 2>/dev/null || die "worker already exists: $worker"
 
   sid="$(uuidgen | tr '[:upper:]' '[:lower:]')"
   tmux_name="pi-subagent-${PI_SESSION_ID}-${worker}"
 
-  printf '%s\n' "$sid" >"$dir/session-id"
-  printf '%s\n' "$cwd" >"$dir/cwd"
-  printf '%s\n' "$delay" >"$dir/delay"
-  printf '%s\n' "$tmux_name" >"$dir/tmux-name"
-  cat >"$dir/prompt"
+  printf '%s\n' "$sid" >"$worker_dir/session-id"
+  printf '%s\n' "$cwd" >"$worker_dir/cwd"
+  printf '%s\n' "$delay" >"$worker_dir/delay"
+  printf '%s\n' "$pi_session_dir" >"$worker_dir/pi-session-dir"
+  printf '%s\n' "$tmux_name" >"$worker_dir/tmux-name"
+  cat >"$worker_dir/prompt"
 
-  cat >"$dir/run.sh" <<'RUNNER'
+  cat >"$worker_dir/run.sh" <<'RUNNER'
 #!/usr/bin/env bash
 set +e
 
-dir="$(cd "$(dirname "$0")" && pwd -P)"
-sid="$(cat "$dir/session-id")"
-cwd="$(cat "$dir/cwd")"
-delay="$(cat "$dir/delay")"
-worker="$(basename "$dir")"
+worker_dir="$(cd "$(dirname "$0")" && pwd -P)"
+sid="$(cat "$worker_dir/session-id")"
+cwd="$(cat "$worker_dir/cwd")"
+delay="$(cat "$worker_dir/delay")"
+pi_session_dir="$(cat "$worker_dir/pi-session-dir")"
+worker="$(basename "$worker_dir")"
 
 sleep "$delay"
 if cd "$cwd"; then
-  cat "$dir/prompt" |
-    pi --session-id "$sid" --name "subagent:$worker" -p \
-      >"$dir/output" 2>&1
+  cat "$worker_dir/prompt" |
+    pi --session-dir "$pi_session_dir" \
+      --session-id "$sid" --name "subagent:$worker" -p \
+      >"$worker_dir/output" 2>&1
   rc=$?
 else
-  printf 'Could not enter working directory: %s\n' "$cwd" >"$dir/output"
+  printf 'Could not enter working directory: %s\n' "$cwd" >"$worker_dir/output"
   rc=125
 fi
 
-printf '%s\n' "$rc" >"$dir/exit.tmp"
-mv "$dir/exit.tmp" "$dir/exit"
+printf '%s\n' "$rc" >"$worker_dir/exit.tmp"
+mv "$worker_dir/exit.tmp" "$worker_dir/exit"
 RUNNER
-  chmod +x "$dir/run.sh"
+  chmod +x "$worker_dir/run.sh"
 
-  if ! tmux new-session -d -s "$tmux_name" "$(printf %q "$dir/run.sh")"; then
-    printf '%s\n' 125 >"$dir/exit"
+  if ! tmux new-session -d -s "$tmux_name" "$(printf %q "$worker_dir/run.sh")"; then
+    printf '%s\n' 125 >"$worker_dir/exit"
     die "failed to launch worker: $worker"
   fi
 
@@ -179,49 +185,57 @@ RUNNER
 resume_worker() {
   [ "$#" -eq 1 ] || die "usage: $program resume WORKER"
 
-  local state
-  local dir
+  local parent_dir
+  local worker_dir
+  local pi_session_dir
   local sid
   local cwd
-  state="$(resolve_state)" || exit $?
-  dir="$(resolve_worker "$state" "$1")" || exit $?
+  parent_dir="$(resolve_parent_dir)" || exit $?
+  worker_dir="$(resolve_worker "$parent_dir" "$1")" || exit $?
 
-  if [ ! -f "$dir/exit" ] && [ ! -f "$dir/done" ]; then
+  if [ ! -f "$worker_dir/exit" ] && [ ! -f "$worker_dir/done" ]; then
     die "worker is still running: $1"
   fi
 
   require_command pi
-  sid="$(cat "$dir/session-id")"
-  cwd="$(cat "$dir/cwd")"
+  sid="$(cat "$worker_dir/session-id")"
+  cwd="$(cat "$worker_dir/cwd")"
   cd "$cwd" || die "working directory does not exist: $cwd"
-  pi --session "$sid" -p
+
+  if [ -f "$worker_dir/pi-session-dir" ]; then
+    pi_session_dir="$(cat "$worker_dir/pi-session-dir")"
+    pi --session-dir "$pi_session_dir" --session "$sid" -p
+  else
+    # Workers created before isolated session storage used Pi's default directory.
+    pi --session "$sid" -p
+  fi
 }
 
 wait_any() {
   [ "$#" -eq 0 ] || die "usage: $program wait-any"
 
-  local state
-  local d
+  local parent_dir
+  local worker_dir
   local workers
   local unfinished
-  state="$(resolve_state)" || exit $?
+  parent_dir="$(resolve_parent_dir)" || exit $?
 
   while :; do
     workers=0
     unfinished=0
 
-    for d in "$state/workers"/*; do
-      [ -d "$d" ] || continue
+    for worker_dir in "$parent_dir/workers"/*; do
+      [ -d "$worker_dir" ] || continue
       workers=$((workers + 1))
 
-      if [ -f "$d/exit" ]; then
-        if mv "$d/exit" "$d/done" 2>/dev/null; then
-          basename "$d"
+      if [ -f "$worker_dir/exit" ]; then
+        if mv "$worker_dir/exit" "$worker_dir/done" 2>/dev/null; then
+          basename "$worker_dir"
           return 0
         fi
       fi
 
-      [ -f "$d/done" ] || unfinished=$((unfinished + 1))
+      [ -f "$worker_dir/done" ] || unfinished=$((unfinished + 1))
     done
 
     [ "$workers" -gt 0 ] || die "this Pi session has no subagent workers"
@@ -249,44 +263,44 @@ wait_all() {
 worker_output() {
   [ "$#" -eq 1 ] || die "usage: $program output WORKER"
 
-  local state
-  local dir
-  state="$(resolve_state)" || exit $?
-  dir="$(resolve_worker "$state" "$1")" || exit $?
-  [ -f "$dir/output" ] || die "worker has no output yet: $1"
-  cat "$dir/output"
+  local parent_dir
+  local worker_dir
+  parent_dir="$(resolve_parent_dir)" || exit $?
+  worker_dir="$(resolve_worker "$parent_dir" "$1")" || exit $?
+  [ -f "$worker_dir/output" ] || die "worker has no output yet: $1"
+  cat "$worker_dir/output"
 }
 
 worker_exit_code() {
   [ "$#" -eq 1 ] || die "usage: $program exit-code WORKER"
 
-  local state
-  local dir
-  state="$(resolve_state)" || exit $?
-  dir="$(resolve_worker "$state" "$1")" || exit $?
+  local parent_dir
+  local worker_dir
+  parent_dir="$(resolve_parent_dir)" || exit $?
+  worker_dir="$(resolve_worker "$parent_dir" "$1")" || exit $?
 
-  if [ -f "$dir/done" ]; then
-    cat "$dir/done"
-  elif [ -f "$dir/exit" ]; then
-    cat "$dir/exit"
+  if [ -f "$worker_dir/done" ]; then
+    cat "$worker_dir/done"
+  elif [ -f "$worker_dir/exit" ]; then
+    cat "$worker_dir/exit"
   else
     die "worker has not completed: $1"
   fi
 }
 
 worker_state() {
-  local dir="$1"
+  local worker_dir="$1"
   local marker
 
-  if [ -f "$dir/done" ]; then
-    marker="$(cat "$dir/done")"
+  if [ -f "$worker_dir/done" ]; then
+    marker="$(cat "$worker_dir/done")"
     if [ "$marker" = cancelled ]; then
       printf 'cancelled\t%s\n' "$marker"
     else
       printf 'consumed\t%s\n' "$marker"
     fi
-  elif [ -f "$dir/exit" ]; then
-    marker="$(cat "$dir/exit")"
+  elif [ -f "$worker_dir/exit" ]; then
+    marker="$(cat "$worker_dir/exit")"
     if [ "$marker" = cancelled ]; then
       printf 'cancelled\t%s\n' "$marker"
     else
@@ -300,22 +314,22 @@ worker_state() {
 run_status() {
   [ "$#" -eq 0 ] || die "usage: $program status"
 
-  local state
-  local d
+  local parent_dir
+  local worker_dir
   local found=0
-  local state_and_exit
+  local status_and_exit
   local worker_status
   local code
-  state="$(resolve_state)" || exit $?
+  parent_dir="$(resolve_parent_dir)" || exit $?
 
   printf '%-20s %-10s %s\n' WORKER STATE EXIT
-  for d in "$state/workers"/*; do
-    [ -d "$d" ] || continue
+  for worker_dir in "$parent_dir/workers"/*; do
+    [ -d "$worker_dir" ] || continue
     found=1
-    state_and_exit="$(worker_state "$d")"
-    worker_status="${state_and_exit%%	*}"
-    code="${state_and_exit#*	}"
-    printf '%-20s %-10s %s\n' "$(basename "$d")" "$worker_status" "$code"
+    status_and_exit="$(worker_state "$worker_dir")"
+    worker_status="${status_and_exit%%	*}"
+    code="${status_and_exit#*	}"
+    printf '%-20s %-10s %s\n' "$(basename "$worker_dir")" "$worker_status" "$code"
   done
 
   [ "$found" -eq 1 ] || printf '%s\n' '(no workers)'
@@ -324,20 +338,20 @@ run_status() {
 cancel_worker() {
   [ "$#" -eq 1 ] || die "usage: $program cancel WORKER"
 
-  local state
-  local dir
+  local parent_dir
+  local worker_dir
   local tmux_name
-  state="$(resolve_state)" || exit $?
-  dir="$(resolve_worker "$state" "$1")" || exit $?
+  parent_dir="$(resolve_parent_dir)" || exit $?
+  worker_dir="$(resolve_worker "$parent_dir" "$1")" || exit $?
 
-  if [ -f "$dir/exit" ] || [ -f "$dir/done" ]; then
+  if [ -f "$worker_dir/exit" ] || [ -f "$worker_dir/done" ]; then
     die "worker is already complete: $1"
   fi
 
-  tmux_name="$(cat "$dir/tmux-name")"
+  tmux_name="$(cat "$worker_dir/tmux-name")"
   tmux kill-session -t "$tmux_name" 2>/dev/null || true
-  printf '%s\n' cancelled >"$dir/exit.tmp"
-  mv "$dir/exit.tmp" "$dir/exit"
+  printf '%s\n' cancelled >"$worker_dir/exit.tmp"
+  mv "$worker_dir/exit.tmp" "$worker_dir/exit"
   printf '%s\n' "$1"
 }
 

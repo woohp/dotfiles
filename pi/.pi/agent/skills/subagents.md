@@ -1,163 +1,164 @@
 ---
 name: subagents
-description: Launch, coordinate, wait for, inspect, and resume independent Pi subagents using the subagent CLI.
+description: Launch, coordinate, inspect, and resume independent Pi workers with the subagent CLI.
 ---
 
 # Subagents
 
-Use the `subagent` CLI for parallel workers. It manages stable Pi session IDs, detached tmux processes, captured output, and durable completion markers under `.pi/subagents/`.
+Use the `subagent` CLI for delegated Pi workers. It handles session IDs, detached tmux processes, output capture, completion markers, and follow-up turns.
 
-A worker is a stable Pi session, not a Pi process. The process exits after its turn; the session ID remains available for a later resume.
-
-## Rules
-
-* Give each logical worker a unique name within its run.
-* Never run two Pi processes against the same worker session simultaneously.
-* Never use `pi -c` for subagents; "latest session" is ambiguous.
-* Shell variables do not persist across separate bash tool calls. Keep the printed run path in agent context and use that literal path in later calls.
-* Completion state lives on disk, not in tmux or shell state.
-* A resumed worker sees the filesystem as it exists now. Tell it to reread files that may have changed.
-* Prefer a few substantial workers over many tiny ones. Usually 2–4 is enough.
-
-## CLI
-
-```text
-subagent create [--cwd PATH]
-subagent launch RUN WORKER [--delay SECONDS] < PROMPT
-subagent wait-any RUN
-subagent wait-all RUN
-subagent output RUN WORKER
-subagent exit-code RUN WORKER
-subagent status RUN
-subagent cancel RUN WORKER
-```
-
-Run `subagent --help` for the full command summary.
-
-## One worker
-
-When there is only one worker and the parent has no independent work, a direct blocking Pi call is simplest:
+## Typical workflow
 
 ```bash
-sid="$(uuidgen | tr '[:upper:]' '[:lower:]')"
-printf '%s\n' \
-  'Review the parser implementation. Report concrete correctness problems; do not modify files.' |
-  pi --session-id "$sid" --name subagent:reviewer -p
-```
-
-First use of a new session ID may warn that no project session was found and a new one is being created. This is expected.
-
-Use the CLI when durable output, cancellation, or the same orchestration shape as parallel work is useful even for one worker.
-
-## Parallel workers
-
-Create a run:
-
-```bash
-run="$(subagent create)"
-printf 'RUN=%s\n' "$run"
-```
-
-`create` uses the current directory as the workers' working directory. Use `subagent create --cwd PATH` to choose another.
-
-Launch workers. Prompts are read from stdin, and `launch` returns immediately after starting detached tmux:
-
-```bash
-subagent launch "$run" reviewer <<'EOF'
+subagent launch reviewer <<'EOF'
 Review the parser for correctness problems. Do not modify files. Report concrete findings with file references.
 EOF
 
-subagent launch "$run" tests <<'EOF'
-Inspect parser tests for important coverage gaps. Do not modify files. Report missing behavioral cases.
-EOF
+worker="$(subagent wait-any)"
+subagent output "$worker"
 
-subagent launch "$run" design <<'EOF'
-Independently assess whether the parser design can be simplified. Do not modify files. Report only actionable suggestions.
+subagent resume reviewer <<'EOF'
+Reread the relevant files and reconsider your findings in light of this new information: ...
 EOF
 ```
 
-For a later bash tool call, assign the literal path printed by `create`; do not assume `$run` survived:
+No run needs to be created or carried between bash calls. The CLI scopes workers automatically to the parent agent's `PI_SESSION_ID`.
+
+## Rules
+
+* Give each worker a unique name within the parent Pi session. A name cannot be reused.
+* Never run two processes against the same worker session simultaneously.
+* Prefer `subagent resume WORKER` for follow-ups. Do not look up session IDs manually or use `pi -c`.
+* Launch independent workers before waiting for them.
+* Do not block while the parent still has useful independent work.
+* Tell resumed workers to reread files that may have changed.
+* Prefer a few substantial workers over many tiny ones. Usually 2–4 is enough.
+
+## Commands
+
+```text
+subagent launch WORKER [--cwd PATH] [--delay SECONDS] < PROMPT
+subagent resume WORKER < PROMPT
+subagent wait-any
+subagent wait-all
+subagent output WORKER
+subagent exit-code WORKER
+subagent status
+subagent cancel WORKER
+```
+
+Run `subagent --help` for a summary. `--delay` exists for deterministic orchestration tests; normal workers should not need it.
+
+## Launch
+
+`launch` reads the prompt from stdin, starts the worker in detached tmux, and returns immediately:
 
 ```bash
-run="/absolute/path/to/.pi/subagents/<run-id>"
-subagent status "$run"
+subagent launch tests <<'EOF'
+Inspect the parser tests for important coverage gaps. Do not modify files. Report missing behavioral cases.
+EOF
+
+subagent launch design <<'EOF'
+Assess whether the parser design can be simplified. Do not modify files. Report only actionable suggestions.
+EOF
 ```
 
-The child does not inherit the parent's conversation. Every prompt should include:
+Workers use the current directory by default. Override it when necessary:
 
-* the objective;
+```bash
+subagent launch reviewer --cwd /path/to/project <<'EOF'
+Review the parser implementation. Do not modify files.
+EOF
+```
+
+A successful launch prints:
+
+```text
+WORKER=reviewer
+SESSION_ID=<session-id>
+```
+
+The session ID is diagnostic information. Use the worker name with later CLI commands.
+
+A child does not inherit the parent's conversation. Give it enough context to work independently:
+
+* objective;
 * relevant files or subsystem;
-* important constraints;
+* constraints;
 * whether to modify files or only investigate;
 * the result the parent needs.
 
-Point workers at repository files instead of copying large context.
+Point workers at repository files instead of copying large amounts of context.
 
-## Wait for completions
+## Collect completions
 
-Wait for exactly one unseen completion:
+Wait for one unseen initial completion:
 
 ```bash
-worker="$(subagent wait-any "$run")"
-rc="$(subagent exit-code "$run" "$worker")"
-subagent output "$run" "$worker"
+worker="$(subagent wait-any)"
+echo "Completed: $worker (exit $(subagent exit-code "$worker"))"
+subagent output "$worker"
 ```
 
-`wait-any` blocks while workers are running. It atomically claims one completion by moving its `exit` marker to `done`, then prints only the worker name. It exits with status 1 when all completions have already been consumed.
+`wait-any` atomically claims one completion by moving its `exit` marker to `done`, then prints only the worker name. It blocks while workers are running and exits with status 1 when every completion has already been consumed.
 
-React to the result, then call `wait-any` again. Do not block while the parent still has useful independent work.
-
-A typical loop is:
+React to the result, then wait again:
 
 ```bash
-while worker="$(subagent wait-any "$run")"; do
-  printf 'Completed: %s (exit %s)\n' \
-    "$worker" "$(subagent exit-code "$run" "$worker")"
-  subagent output "$run" "$worker"
+while worker="$(subagent wait-any)"; do
+  echo "Completed: $worker (exit $(subagent exit-code "$worker"))"
+  subagent output "$worker"
 done
 ```
 
-If the parent does not need to react between completions, consume every remaining completion:
+If no reaction is needed between completions:
 
 ```bash
-subagent wait-all "$run"
+subagent wait-all
 ```
 
-`wait-all` prints worker names as they are consumed. It is a convenience around repeated `wait-any` calls; it does not print worker output.
+`wait-all` consumes every remaining initial completion and prints worker names. It does not print worker output.
 
-If several workers complete before the next poll, each completion remains durable and will be returned by a later wait. The simple directory scan guarantees no loss, but does not promise strict chronological ordering among completions already waiting at the same time.
+Completions remain on disk until consumed, so none are lost. If multiple workers finish before the next poll, the directory scan does not guarantee chronological order among those already waiting.
 
-## Inspect results and state
+## Follow-up turns
+
+Use `resume` as the default path:
 
 ```bash
-subagent status "$run"
-subagent output "$run" reviewer
-subagent exit-code "$run" reviewer
+subagent resume reviewer <<'EOF'
+Now inspect the tests and determine whether they cover the problems you found.
+EOF
 ```
 
-States are:
+`resume` restores the worker's Pi session in its original working directory and streams the response directly to the parent. The initial detached turn must already be complete.
 
-* `running`: no completion marker yet;
-* `completed`: `exit` exists but has not been consumed;
-* `consumed`: `exit` was moved to `done`;
-* `cancelled`: cancellation was recorded.
+A resumed process reconstructs conversation history but not process-local memory, open connections, or handles. Resumed turns are not written to the worker's initial `output`, `exit`, or `done` files.
 
-A worker's files live at:
+## Status, output, and cancellation
 
-```text
-RUN/workers/WORKER/
-    session-id
-    prompt
-    output
-    tmux-name
-    exit        # completed, not consumed
-    done        # completed, consumed
+```bash
+subagent status
+subagent output reviewer
+subagent exit-code reviewer
+subagent cancel reviewer
 ```
+
+Worker states are:
+
+* `running` — initial turn is active;
+* `completed` — initial turn finished but is unconsumed;
+* `consumed` — completion was claimed by a wait command;
+* `cancelled` — cancellation was recorded.
+
+`cancel` stops the worker's tmux session and records a durable `cancelled` completion. A later `wait-any` or `wait-all` consumes it normally.
 
 To inspect a running worker's tmux pane:
 
 ```bash
-tmux_name="$(cat "$run/workers/$worker/tmux-name")"
+subagent_root="${SUBAGENT_STATE_DIR:-$HOME/.pi/agent/subagents}"
+parent_dir="$subagent_root/$PI_SESSION_ID"
+tmux_name="$(cat "$parent_dir/workers/$worker/tmux-name")"
 tmux capture-pane -p -t "$tmux_name" -S -200
 ```
 
@@ -167,45 +168,36 @@ Attach only when interactive inspection is useful:
 tmux attach -t "$tmux_name"
 ```
 
-## Cancel
+## Storage and session isolation
 
-```bash
-subagent cancel "$run" "$worker"
+Data is stored outside the project:
+
+```text
+~/.pi/agent/subagents/<PARENT_PI_SESSION_ID>/
+    sessions/                   # isolated Pi JSONL sessions
+    workers/<WORKER>/
+        session-id
+        pi-session-dir
+        cwd
+        prompt
+        output                  # initial turn only
+        tmux-name
+        exit                    # completed, not consumed
+        done                    # completed, consumed
 ```
 
-This stops the worker's tmux session and writes a durable `cancelled` completion. Consume it with `wait-any` or `wait-all` like any other completion.
+The CLI passes `sessions/` to Pi with `--session-dir`. Subagent conversations therefore do not appear in the parent project's `/resume` picker. Set `SUBAGENT_STATE_DIR` to override the default subagent root.
 
-## Resume a worker
-
-The CLI currently manages initial detached turns. Resume a completed worker directly from its saved session ID:
-
-```bash
-sid="$(cat "$run/workers/$worker/session-id")"
-printf '%s\n' \
-  'Reread any relevant files, then reconsider your conclusion given this new information: ...' |
-  pi --session "$sid" -p
-```
-
-Do not resume until the prior process for that worker has exited. A resumed process reconstructs conversation state, but it does not resurrect process-local memory, connections, or handles. This direct resumed turn is not added back to the run's `exit`/`done` accounting.
-
-## Shared filesystem
+## Delegation and filesystem safety
 
 Read-only workers can share one working tree. If workers may modify overlapping files, coordinate file ownership or use separate Git worktrees.
 
-Good delegation patterns include:
+Good uses include independent reviews, separate subsystem investigations, implementation plus independent review, competing approaches, and partitioning a large search.
 
-* independent reviews;
-* separate subsystem investigations;
-* implementation plus independent review;
-* competing approaches;
-* partitioning a large search.
+Keep these invariants:
 
-## Invariants
-
-1. One stable session ID per logical worker.
-2. At most one active Pi process per session.
-3. Detached turns produce a durable `exit` marker; cancellation records an explicit equivalent.
-4. `exit → done` means one completion was consumed.
-5. Waiting for one worker never loses other completions.
-6. Resumed workers reread potentially stale filesystem state.
-7. Never use "most recent session" as worker identity.
+1. One stable Pi session ID per worker.
+2. At most one active Pi process per worker session.
+3. Detached initial turns produce a durable completion marker.
+4. Consuming one completion never loses another.
+5. Never use "most recent session" as worker identity.
