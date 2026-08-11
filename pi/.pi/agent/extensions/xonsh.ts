@@ -6,25 +6,24 @@ import {
 } from "@earendil-works/pi-coding-agent";
 import { Type } from "typebox";
 
-function findXonsh(): string {
+function findXonsh(): string | undefined {
 	const lookup = process.platform === "win32" ? "where" : "which";
 	const result = spawnSync(lookup, ["xonsh"], { encoding: "utf8" });
 	const path = result.stdout?.trim().split(/\r?\n/, 1)[0];
 
-	if (result.status !== 0 || !path) {
-		throw new Error("xonsh was not found on PATH");
-	}
-
-	return path;
+	return result.status === 0 ? path : undefined;
 }
 
 export default function (pi: ExtensionAPI) {
+	const shellPath = findXonsh();
+	if (!shellPath) return;
+
 	const cwd = process.cwd();
 	const xonshTool = createBashToolDefinition(cwd, {
 		// createLocalBashOperations provides Pi's standard streaming, timeout,
 		// cancellation, process-tree cleanup, and environment handling. The
 		// explicit executable is still invoked with xonsh's `-c` interface.
-		operations: createLocalBashOperations({ shellPath: findXonsh() }),
+		operations: createLocalBashOperations({ shellPath }),
 	});
 
 	pi.registerTool({
