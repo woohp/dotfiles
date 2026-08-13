@@ -15,17 +15,19 @@ Usage:
   subagent output WORKER
   subagent exit-code WORKER
   subagent status
+  subagent open WORKER [--parent SESSION_ID]
   subagent cancel WORKER
 
 Commands:
   launch       Launch a specifically named worker's initial turn.
   launch-next  Atomically launch the first available PREFIX-N worker.
-  resume       Launch a follow-up turn in the same worker and tmux session.
+  resume       Launch a follow-up turn in a tmux session.
   wait-any     Wait for and claim one selected worker completion.
   wait-all     Wait for and claim all selected worker completions.
   output       Print a worker's latest turn output.
   exit-code    Print a worker's latest turn exit code or "cancelled".
   status       Show each worker's latest turn state.
+  open         Open a worker's Pi session interactively for inspection.
   cancel       Stop a running worker turn and record it as cancelled.
 
 launch and resume return immediately. wait-any and wait-all are the blocking
@@ -60,13 +62,16 @@ validate_component() {
   esac
 }
 
+subagent_root_dir() {
+  printf '%s\n' "${SUBAGENT_STATE_DIR:-$HOME/.pi/agent/subagents}"
+}
+
 subagent_parent_dir() {
   local parent_session_id="${PI_SESSION_ID:-}"
-  local subagent_root="${SUBAGENT_STATE_DIR:-$HOME/.pi/agent/subagents}"
 
   [ -n "$parent_session_id" ] || die "PI_SESSION_ID is not set"
   validate_component "PI session ID" "$parent_session_id"
-  printf '%s/%s\n' "$subagent_root" "$parent_session_id"
+  printf '%s/%s\n' "$(subagent_root_dir)" "$parent_session_id"
 }
 
 ensure_parent_dir() {
@@ -74,6 +79,12 @@ ensure_parent_dir() {
   parent_dir="$(subagent_parent_dir)" || exit $?
   mkdir -p "$parent_dir/workers" "$parent_dir/sessions" ||
     die "cannot create subagent directory: $parent_dir"
+
+  if [ ! -f "$parent_dir/parent-cwd" ]; then
+    pwd -P >"$parent_dir/parent-cwd.tmp"
+    mv "$parent_dir/parent-cwd.tmp" "$parent_dir/parent-cwd"
+  fi
+
   printf '%s\n' "$parent_dir"
 }
 
@@ -139,6 +150,9 @@ mode="$(cat "$turn_dir/mode")"
 delay="$(cat "$turn_dir/delay")"
 
 sleep "$delay"
+printf '\n=== %s turn %s: parent prompt ===\n' "$worker" "$turn"
+cat "$turn_dir/prompt"
+printf '\n=== %s turn %s: subagent output ===\n' "$worker" "$turn"
 if cd "$cwd"; then
   if [ "$mode" = initial ]; then
     cat "$turn_dir/prompt" |
@@ -167,12 +181,11 @@ RUNNER
 ensure_tmux_session() {
   local tmux_name="$1"
 
-  if tmux has-session -t "$tmux_name" 2>/dev/null; then
-    return
+  if ! tmux has-session -t "$tmux_name" 2>/dev/null; then
+    tmux new-session -d -s "$tmux_name" || return
   fi
 
-  tmux new-session -d -s "$tmux_name" || return
-  tmux set-option -t "$tmux_name" remain-on-exit on >/dev/null || return
+  tmux set-option -t "$tmux_name" remain-on-exit off >/dev/null || return
 }
 
 start_turn() {
@@ -488,6 +501,88 @@ cancel_worker() {
   printf '%s\n' "$1"
 }
 
+open_worker() {
+  [ "$#" -ge 1 ] || die "usage: $program open WORKER [--parent SESSION_ID]"
+
+  local worker="$1"
+  local parent_session_id="${PI_SESSION_ID:-}"
+  local parent_dir
+  local worker_dir
+  local turn_dir
+  local sid
+  local cwd
+  local pi_session_dir
+  local subagent_root
+  local candidate
+  local candidate_cwd
+  local current_cwd
+  local matches=0
+  shift
+
+  while [ "$#" -gt 0 ]; do
+    case "$1" in
+      --parent)
+        [ "$#" -ge 2 ] || die "--parent requires a session ID"
+        parent_session_id="$2"
+        shift 2
+        ;;
+      *) die "unknown open option: $1" ;;
+    esac
+  done
+
+  validate_component "worker name" "$worker"
+  subagent_root="$(subagent_root_dir)"
+
+  if [ -n "$parent_session_id" ]; then
+    validate_component "PI session ID" "$parent_session_id"
+    parent_dir="$subagent_root/$parent_session_id"
+    [ -d "$parent_dir/workers" ] ||
+      die "parent session has no subagent workers: $parent_session_id"
+  else
+    current_cwd="$(absolute_dir "$PWD")"
+    parent_dir=""
+
+    for candidate in "$subagent_root"/*; do
+      [ -d "$candidate/workers/$worker" ] || continue
+
+      if [ -f "$candidate/parent-cwd" ]; then
+        candidate_cwd="$(cat "$candidate/parent-cwd")"
+      elif [ -f "$candidate/workers/$worker/cwd" ]; then
+        candidate_cwd="$(cat "$candidate/workers/$worker/cwd")"
+      else
+        continue
+      fi
+
+      [ "$candidate_cwd" = "$current_cwd" ] || continue
+      parent_dir="$candidate"
+      matches=$((matches + 1))
+    done
+
+    [ "$matches" -gt 0 ] || die "worker not found for current directory: $worker"
+    if [ "$matches" -gt 1 ]; then
+      die "multiple parent sessions contain $worker for this directory; use --parent SESSION_ID"
+    fi
+  fi
+
+  worker_dir="$(resolve_worker "$parent_dir" "$worker")" || exit $?
+  turn_dir="$(latest_turn_dir "$worker_dir")" || exit $?
+  if [ ! -f "$turn_dir/exit" ] && [ ! -f "$turn_dir/done" ]; then
+    error "warning: $worker is running; this is a non-live snapshot—do not submit concurrently"
+  fi
+
+  require_command pi
+  sid="$(cat "$worker_dir/session-id")"
+  cwd="$(cat "$worker_dir/cwd")"
+  cd "$cwd" || die "working directory does not exist: $cwd"
+
+  if [ -f "$worker_dir/pi-session-dir" ]; then
+    pi_session_dir="$(cat "$worker_dir/pi-session-dir")"
+    exec pi --session-dir "$pi_session_dir" --session "$sid"
+  fi
+
+  exec pi --session "$sid"
+}
+
 main() {
   [ "$#" -gt 0 ] || {
     usage
@@ -506,6 +601,7 @@ main() {
     output) worker_output "$@" ;;
     exit-code) worker_exit_code "$@" ;;
     status) run_status "$@" ;;
+    open) open_worker "$@" ;;
     cancel) cancel_worker "$@" ;;
     -h|--help|help) usage ;;
     *)

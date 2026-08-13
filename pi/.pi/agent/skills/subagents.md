@@ -53,6 +53,7 @@ subagent wait-all WORKER...
 subagent output WORKER
 subagent exit-code WORKER
 subagent status
+subagent open WORKER [--parent SESSION_ID]
 subagent cancel WORKER
 ```
 
@@ -156,16 +157,17 @@ worker="$(subagent wait-any reviewer)"
 subagent output "$worker"
 ```
 
-`resume` creates the next turn, restores the same Pi session in its original working directory, and runs it in the worker's existing tmux session. It returns immediately and prints the worker name, turn number, and stable Pi session ID.
+`resume` creates the next turn, restores the same Pi session in its original working directory, and starts a new tmux session under the worker's deterministic tmux name. It returns immediately and prints the worker name, turn number, and stable Pi session ID.
 
 A resumed Pi process reconstructs conversation history but not process-local memory, open connections, or handles.
 
-## Status, output, cancellation, and tmux
+## Status, output, inspection, cancellation, and tmux
 
 ```bash
 subagent status
 subagent output reviewer
 subagent exit-code reviewer
+subagent open reviewer
 subagent cancel reviewer
 ```
 
@@ -176,16 +178,19 @@ subagent cancel reviewer
 * `consumed` — latest completion was claimed by a wait command;
 * `cancelled` — cancellation was recorded.
 
-`cancel` stops the worker's tmux session and records a durable `cancelled` completion. A later wait for that worker consumes it normally. A subsequent resume recreates the tmux session if necessary.
+`cancel` stops the worker's tmux session and records a durable `cancelled` completion. A later wait for that worker consumes it normally.
 
-Each worker keeps one stable tmux session with `remain-on-exit`. Every turn runs in the same pane. Pi uses non-interactive print mode and passes output through `tee`, so output is captured on disk and visible in the pane. Attaching is observational, not an interactive Pi TUI:
+A tmux session exists only while a turn is running. The runner prints the parent prompt with a turn header, then passes Pi's output through `tee`; attaching while active shows both sides of the current turn. When Pi and the runner exit, tmux removes the session naturally. A later resume recreates it under the same deterministic name.
+
+To inspect the full Pi conversation after a turn, run this from the parent project's working directory:
 
 ```bash
-subagent_root="${SUBAGENT_STATE_DIR:-$HOME/.pi/agent/subagents}"
-parent_dir="$subagent_root/$PI_SESSION_ID"
-tmux_name="$(cat "$parent_dir/workers/$worker/tmux-name")"
-tmux attach -t "$tmux_name"
+subagent open reviewer
 ```
+
+Outside a Pi agent process, `open` finds the worker by its name and the current directory. If multiple parent sessions match, it exits rather than guessing; disambiguate with `subagent open reviewer --parent <PARENT_PI_SESSION_ID>`. If the worker is currently running, `open` warns that the view is a non-live snapshot. Do not submit from the inspection process concurrently with a worker turn.
+
+Opening Pi is interactive and blocks that terminal until it exits. It is for human inspection, not parent-agent orchestration.
 
 ## Storage and session isolation
 
@@ -218,7 +223,7 @@ Good uses include independent reviews, separate subsystem investigations, implem
 
 Keep these invariants:
 
-1. One stable Pi session ID and tmux session per worker.
+1. One stable Pi session ID and deterministic tmux name per worker; tmux itself exists only during active turns.
 2. At most one active Pi process per worker.
 3. Every turn produces a durable completion marker.
 4. The caller explicitly names the workers whose completions may be consumed.
