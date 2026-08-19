@@ -1,0 +1,223 @@
+#!/usr/bin/env python3
+"""Post a structured code review to a GitHub PR.
+
+Reads a JSON file with a summary and per-line comments, resolves each comment's
+file/line against the PR diff (falling back to a file-level comment when the
+line is not in the diff), and posts the review via `gh api`.
+
+Usage:
+    post-gh-review --pr 61 review.json
+    post-gh-review --pr 61 --repo owner/repo review.json
+    post-gh-review --pr 61 --dry-run review.json
+
+Input JSON shape:
+    {
+      "summary": "Overall review body (markdown).",
+      "event": "COMMENT",            // COMMENT | APPROVE | REQUEST_CHANGES
+      "comments": [
+        {
+          "path": "src/foo.py",
+          "line": 42,
+          "body": "**Minor** — explanation here.",
+          "side": "RIGHT"            // optional, default RIGHT
+        }
+      ]
+    }
+
+Line resolution:
+    Each comment's (path, line) is checked against the PR diff. If the line is
+    in an added/modified hunk, it is posted as an inline comment. If not (e.g.
+    unchanged context, deleted line, or outside the diff entirely), the comment
+    is posted as a top-level PR comment with the file and line noted in the body.
+
+Lenient input:
+    Trailing commas and // comments are stripped before parsing, so the JSON
+    does not need to be strict.
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import re
+import subprocess
+import sys
+from dataclasses import dataclass, field
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(
+        description="Post a structured code review to a GitHub PR.",
+    )
+    parser.add_argument("review_file", help="JSON file with summary and comments")
+    parser.add_argument("--pr", type=int, required=True, help="PR number")
+    parser.add_argument("--repo", help="owner/repo (default: current repo)")
+    parser.add_argument("--dry-run", action="store_true", help="Preview without posting")
+    args = parser.parse_args()
+    post_review(args.pr, args.review_file, repo=args.repo, dry_run=args.dry_run)
+
+
+def post_review(
+    pr: int,
+    review_path: str,
+    repo: str | None = None,
+    dry_run: bool = False,
+) -> None:
+    with open(review_path) as f:
+        review_data = _lenient_json(f.read())
+
+    repo_args = ["--repo", repo] if repo else []
+    head_sha = _gh(
+        "api", f"repos/{{owner}}/{{repo}}/pulls/{pr}",
+        *repo_args,
+        "--jq", ".head.sha",
+    ).stdout.strip()
+
+    diff_map = _fetch_diff_map(pr, repo)
+    review_payload, fallback = _build_review(review_data, diff_map)
+    review_payload["commit_id"] = head_sha
+
+    total_inline = len(review_payload["comments"])
+    total_fallback = len(fallback)
+    total = total_inline + total_fallback
+
+    if dry_run:
+        print(f"--- DRY RUN: PR #{pr}, {total} comments "
+              f"({total_inline} inline, {total_fallback} fallback) ---")
+        print(json.dumps(review_payload, indent=2))
+        if fallback:
+            print("\n--- Fallback comments ---")
+            for fb in fallback:
+                print(json.dumps(fb, indent=2))
+        return
+
+    # An empty review (no inline comments and no summary body) is rejected by
+    # GitHub, so only submit one when there is something in it.
+    if review_payload["comments"] or review_payload["body"]:
+        _gh(
+            "api", f"repos/{{owner}}/{{repo}}/pulls/{pr}/reviews",
+            *repo_args,
+            "--method", "POST",
+            "--input", "-",
+            input_data=json.dumps(review_payload),
+        )
+
+    # Free-form fallbacks are plain issue comments. The pulls/{pr}/comments
+    # endpoint creates *review* comments and requires path + line + commit_id,
+    # so a body-only payload there 422s; issues/{pr}/comments takes body alone.
+    for fb in fallback:
+        _gh(
+            "api", f"repos/{{owner}}/{{repo}}/issues/{pr}/comments",
+            *repo_args,
+            "--method", "POST",
+            "--input", "-",
+            input_data=json.dumps(fb),
+        )
+
+    print(f"Posted review on PR #{pr}: {total_inline} inline, "
+          f"{total_fallback} fallback, {total} total")
+
+
+def _build_review(
+    review_data: dict,
+    diff_map: dict[str, _FileDiff],
+) -> tuple[dict, list[dict]]:
+    """Split comments into inline (in-diff) and fallback (free-form)."""
+    inline: list[dict] = []
+    fallback: list[dict] = []
+
+    for comment in review_data.get("comments", []):
+        path = comment["path"]
+        line = comment.get("line")
+        body = comment["body"]
+        side = comment.get("side", "RIGHT")
+
+        file_diff = diff_map.get(path)
+        if line and file_diff and file_diff.line_in_diff(line):
+            inline.append({"path": path, "line": line, "side": side, "body": body})
+        else:
+            prefix = f"**{path}"
+            if line:
+                prefix += f":{line}"
+            prefix += "** (outside diff)\n\n"
+            fallback.append({"body": prefix + body})
+
+    review_payload = {
+        "event": review_data.get("event", "COMMENT"),
+        "body": review_data.get("summary", ""),
+        "comments": inline,
+    }
+    return review_payload, fallback
+
+
+def _fetch_diff_map(pr: int, repo: str | None) -> dict[str, _FileDiff]:
+    """Fetch the PR's file patches and build a path -> FileDiff map."""
+    repo_args = ["--repo", repo] if repo else []
+    result = _gh(
+        "api", f"repos/{{owner}}/{{repo}}/pulls/{pr}/files",
+        "--paginate",
+        *repo_args,
+        "--jq", '.[] | {filename, patch}',
+    )
+    diff_map: dict[str, _FileDiff] = {}
+    for line in result.stdout.strip().split("\n"):
+        if not line:
+            continue
+        entry = json.loads(line)
+        patch = entry.get("patch") or ""
+        diff_map[entry["filename"]] = _FileDiff(hunks=_parse_hunks(patch))
+    return diff_map
+
+
+# --- helpers ---
+
+def _lenient_json(text: str) -> dict:
+    """Parse JSON tolerantly: strip // comments and trailing commas."""
+    text = re.sub(r'(?m)^\s*//.*$', '', text)
+    text = re.sub(r'(?<!:)//.*$', '', text, flags=re.MULTILINE)
+    text = re.sub(r',\s*([}\]])', r'\1', text)
+    return json.loads(text)
+
+
+def _gh(*args: str, input_data: str | None = None) -> subprocess.CompletedProcess[str]:
+    result = subprocess.run(
+        ["gh", *args], input=input_data, capture_output=True, text=True,
+    )
+    if result.returncode != 0:
+        print(f"gh error: {result.stderr.strip()}", file=sys.stderr)
+        sys.exit(result.returncode)
+    return result
+
+
+def _parse_hunks(patch: str) -> list[_DiffHunk]:
+    """Extract new-file line ranges from a unified diff patch."""
+    hunks: list[_DiffHunk] = []
+    for match in re.finditer(r"@@ -\d+(?:,\d+)? \+(\d+)(?:,(\d+))? @@", patch):
+        start = int(match.group(1))
+        count = int(match.group(2)) if match.group(2) is not None else 1
+        hunks.append(_DiffHunk(start=start, count=count))
+    return hunks
+
+
+@dataclass
+class _DiffHunk:
+    """One @@ hunk: the range of new-file lines it covers."""
+    start: int
+    count: int
+
+    @property
+    def end(self) -> int:
+        return self.start + self.count - 1
+
+
+@dataclass
+class _FileDiff:
+    """Parsed diff metadata for one file in the PR."""
+    hunks: list[_DiffHunk] = field(default_factory=list)
+
+    def line_in_diff(self, line: int) -> bool:
+        return any(hunk.start <= line <= hunk.end for hunk in self.hunks)
+
+
+if __name__ == "__main__":
+    main()
