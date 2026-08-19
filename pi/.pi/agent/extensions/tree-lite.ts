@@ -115,17 +115,44 @@ function buildVisibleNodes(ctx: ExtensionCommandContext): VisibleNode[] {
   }
 
   function collectVisibleChildren(parentId: string | null): VisibleTreeNode[] {
-    const children = childrenByParent.get(parentId) ?? [];
     const result: VisibleTreeNode[] = [];
+    type Frame = {
+      children: SessionEntry[];
+      index: number;
+      result: VisibleTreeNode[];
+      entry?: SessionEntry;
+      parentResult?: VisibleTreeNode[];
+    };
 
-    for (const entry of children) {
-      const nestedChildren = collectVisibleChildren(entry.id);
-      const visible = getVisibleText(entry);
+    const stack: Frame[] = [{
+      children: childrenByParent.get(parentId) ?? [],
+      index: 0,
+      result,
+    }];
 
+    while (stack.length > 0) {
+      const frame = stack[stack.length - 1];
+
+      if (frame.index < frame.children.length) {
+        const entry = frame.children[frame.index++];
+        stack.push({
+          children: childrenByParent.get(entry.id) ?? [],
+          index: 0,
+          result: [],
+          entry,
+          parentResult: frame.result,
+        });
+        continue;
+      }
+
+      stack.pop();
+      if (!frame.entry || !frame.parentResult) continue;
+
+      const visible = getVisibleText(frame.entry);
       if (visible) {
-        result.push({ entry, visible, children: nestedChildren });
+        frame.parentResult.push({ entry: frame.entry, visible, children: frame.result });
       } else {
-        result.push(...nestedChildren);
+        for (const child of frame.result) frame.parentResult.push(child);
       }
     }
 
@@ -133,30 +160,52 @@ function buildVisibleNodes(ctx: ExtensionCommandContext): VisibleNode[] {
   }
 
   const nodes: VisibleNode[] = [];
+  const ancestorHasNext: boolean[] = [];
+  type FlattenFrame = {
+    items: VisibleTreeNode[];
+    index: number;
+    ancestorsDepth: number;
+  };
+  const stack: FlattenFrame[] = [{
+    items: collectVisibleChildren(null),
+    index: 0,
+    ancestorsDepth: 0,
+  }];
 
-  function flatten(items: VisibleTreeNode[], ancestors: boolean[]) {
-    const branching = items.length > 1;
+  while (stack.length > 0) {
+    const frame = stack[stack.length - 1];
+    if (frame.index >= frame.items.length) {
+      stack.pop();
+      continue;
+    }
 
-    items.forEach((item, index) => {
-      const isLast = index === items.length - 1;
-      const branchPrefix = ancestors.map((hasNext) => (hasNext ? "│  " : "   ")).join("");
-      const connector = branching ? (isLast ? "└─ " : "├─ ") : "";
-      const label = ctx.sessionManager.getLabel(item.entry.id);
-      const suffix = label ? `  [${label}]` : "";
+    const item = frame.items[frame.index++];
+    const branching = frame.items.length > 1;
+    const isLast = frame.index === frame.items.length;
+    const branchPrefix = ancestorHasNext
+      .slice(0, frame.ancestorsDepth)
+      .map((hasNext) => (hasNext ? "│  " : "   "))
+      .join("");
+    const connector = branching ? (isLast ? "└─ " : "├─ ") : "";
+    const label = ctx.sessionManager.getLabel(item.entry.id);
+    const suffix = label ? `  [${label}]` : "";
 
-      nodes.push({
-        id: item.entry.id,
-        prefix: `${branchPrefix}${connector}`,
-        kind: item.visible.kind,
-        text: summarizeText(item.visible.text),
-        suffix: `${suffix} · ${item.entry.id.slice(0, 8)}`,
-      });
+    nodes.push({
+      id: item.entry.id,
+      prefix: `${branchPrefix}${connector}`,
+      kind: item.visible.kind,
+      text: summarizeText(item.visible.text),
+      suffix: `${suffix} · ${item.entry.id.slice(0, 8)}`,
+    });
 
-      flatten(item.children, branching ? [...ancestors, !isLast] : ancestors);
+    ancestorHasNext[frame.ancestorsDepth] = branching && !isLast;
+    stack.push({
+      items: item.children,
+      index: 0,
+      ancestorsDepth: branching ? frame.ancestorsDepth + 1 : frame.ancestorsDepth,
     });
   }
 
-  flatten(collectVisibleChildren(null), []);
   return nodes;
 }
 
