@@ -173,10 +173,10 @@ subagent cancel reviewer
 
 `output` and `exit-code` refer to the latest turn. Worker states are:
 
-* `running` — latest turn is active;
-* `completed` — latest turn finished but is unconsumed;
-* `consumed` — latest completion was claimed by a wait command;
-* `cancelled` — cancellation was recorded.
+* `running` - latest turn is active;
+* `completed` - latest turn finished but is unconsumed;
+* `consumed` - latest completion was claimed by a wait command;
+* `cancelled` - cancellation was recorded.
 
 `cancel` stops the worker's tmux session and records a durable `cancelled` completion. A later wait for that worker consumes it normally.
 
