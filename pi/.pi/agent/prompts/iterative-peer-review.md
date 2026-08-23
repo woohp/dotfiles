@@ -33,7 +33,22 @@ Do not rewrite, squash, amend, or discard existing commits unless explicitly req
 
 For each reviewer cycle, launch a fresh worker with `subagent launch-next reviewer`. The CLI atomically chooses the first unused numbered name—`reviewer-1`, then `reviewer-2`, and so on—even when another branch or pre-compaction history already created reviewers. Retain the exact `WORKER` value returned by the command and use it for every wait, output, and resume in that cycle. Each reviewer must begin in a fresh Pi session without context from earlier reviewers.
 
-Use the full contents of `~/.pi/agent/agents/peer-reviewer.md` as the reviewer's instruction block by default. Append the stable review target, baseline, repository-specific constraints, and other context needed to review independently; do not rewrite the default instructions merely to personalize them. Deviate from or replace the default only when a concrete aspect of the task makes it unsuitable, preserve as much of it as still applies, and briefly state the reason for the deviation in the next user update or final report. The reviewer must always remain read-only and must not edit, commit, or launch subagents.
+By default, construct the initial reviewer user prompt by concatenating the full contents of `~/.pi/agent/agents/peer-reviewer.md` with a clearly separated target-specific section. When using the default, do not merely refer to the file, claim that it is in the system prompt, or summarize it. Use this pattern:
+
+```bash
+{
+  cat ~/.pi/agent/agents/peer-reviewer.md
+  cat <<'EOF'
+
+---
+<taget, baseline, motivation, context, etc>
+EOF
+} | subagent launch-next reviewer
+```
+
+Keep reviewer instructions in the user prompt, not the system prompt. With the default prompt, add the stable review target, baseline, repository constraints, and other context needed to review independently after the separator.
+
+A fully custom reviewer prompt is allowed when there is a concrete reason the default is unsuitable or a materially different review approach is needed. This should be an intentional exception, not a convenience shortcut. Preserve applicable rigor and safety requirements—especially independent repository inspection, evidence-based findings, stable verdicts and finding IDs, peer-level discussion, and read-only behavior—and briefly explain the reason for using a custom prompt in the next user update or final report.
 
 After launching the reviewer, wait for its exact returned worker name with `subagent wait-any WORKER`, then read its response with `subagent output WORKER`.
 
