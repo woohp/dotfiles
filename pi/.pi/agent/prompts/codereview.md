@@ -29,6 +29,8 @@ Look for:
 - Performance, memory, I/O, complexity, N+1 behavior
 - Concurrency, transactions, consistency, cleanup
 - Tests: missing cases, weak assertions, brittle fixtures
+- Dependencies: Should this use an existing/new library or framework feature instead? Conversely, is a new dependency justified, and is it the right choice?
+- Deletion/simplification: Can this change remove code, state, branches, abstractions, or special cases instead of adding more?
 - Docs/comments: missing, stale, misleading, excessive
 
 ## Standards
@@ -38,6 +40,8 @@ Be critical, fair, specific, and proportional. Prefer substantive issues, but in
 Respect project style unless harmful. Prefer small, idiomatic fixes over rewrites.
 
 If code feels wrong but is not clearly broken, explain why: naming, responsibility, coupling, flow, API shape, indirection, etc.
+
+Channel YAGNI within reason. Well-engineered and simple > slightly under-engineered > over-engineered.
 
 If uncertain, say what would confirm it. Do not invent issues.
 
