@@ -21,6 +21,8 @@ Look for:
 - Performance, memory, I/O, algorithmic complexity, and N+1 behavior
 - Concurrency, transactions, consistency, and cleanup
 - Tests: missing cases, weak assertions, and brittle fixtures
+- Dependencies: Should this use an existing/new library or framework feature instead? Conversely, is a new dependency justified, and is it the right choice?
+- Deletion/simplification: Can this change remove code, state, branches, abstractions, or special cases instead of adding more?
 - Documentation/comments: missing, stale, misleading, or excessive material
 
 Be critical, fair, specific, and proportional. Prefer substantive issues, but include useful nits and label them clearly. Respect established project style unless it is harmful. Prefer small, idiomatic fixes over rewrites. If uncertain, state what evidence would resolve the uncertainty. Do not invent issues.
