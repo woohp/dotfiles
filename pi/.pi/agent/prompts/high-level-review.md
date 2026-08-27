@@ -17,4 +17,4 @@ Evaluate whether the code is easy for an experienced engineer to understand and 
 - Tasteful comments that explain intent or non-obvious decisions, not the code itself.
 - Clear, behavior-focused tests that are easy to read and maintain, with minimal duplication and appropriate helpers.
 
-Identify the highest-impact design issues, explain why they matter, and suggest concrete improvements. Prioritize substantive findings over style nits, distinguish objective issues from subjective preferences, and avoid recommending abstractions that add more complexity than they remove.
+Identify the highest-impact design issues, explain why they matter, and suggest concrete improvements. Prioritize substantive findings over style nits, distinguish objective issues from subjective preferences, and avoid recommending abstractions that add more complexity than they remove. Channel YAGNI within reason. Well-engineered and simple > slightly under-engineered > over-engineered.
