@@ -3,7 +3,7 @@ set -euo pipefail
 
 DOTFILES_REPO_URL="${DOTFILES_REPO_URL:-https://github.com/woohp/dotfiles.git}"
 DOTFILES_DIR="${DOTFILES_DIR:-$HOME/dotfiles}"
-packages=(zsh git ripgrep tmux starship nvim ghostty bat pi)
+packages=(zsh git ripgrep tmux starship nvim ghostty bat pi zellij)
 
 script_dir="$(cd "$(dirname "$0")" && pwd -P)"
 repo_dir="$script_dir"

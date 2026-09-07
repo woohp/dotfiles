@@ -3,7 +3,7 @@ set -euo pipefail
 
 cd "$(dirname "$0")"
 repo_dir="$(pwd -P)"
-packages=(zsh git ripgrep tmux starship nvim ghostty bat)
+packages=(zsh git ripgrep tmux starship nvim ghostty bat zellij)
 old_targets=(
   "$HOME/.zshrc"
   "$HOME/.zprofile"
