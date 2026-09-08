@@ -7,9 +7,9 @@ program="${0##*/}"
 usage() {
     cat <<'EOF'
 Usage:
-  subagent launch WORKER [--cwd PATH] [--delay SECONDS] < PROMPT
-  subagent launch-next PREFIX [--cwd PATH] [--delay SECONDS] < PROMPT
-  subagent resume WORKER < PROMPT
+  subagent launch WORKER [--cwd PATH] [--delay SECONDS] [--provider NAME] [--model MODEL] [--thinking LEVEL] < PROMPT
+  subagent launch-next PREFIX [--cwd PATH] [--delay SECONDS] [--provider NAME] [--model MODEL] [--thinking LEVEL] < PROMPT
+  subagent resume WORKER [--provider NAME] [--model MODEL] [--thinking LEVEL] < PROMPT
   subagent wait-any WORKER...
   subagent wait-all WORKER...
   subagent output WORKER
@@ -59,6 +59,13 @@ absolute_dir() {
 validate_component() {
     case "$2" in
     '' | *[!A-Za-z0-9._-]* | [.-]*) die "invalid $1: $2" ;;
+    esac
+}
+
+validate_thinking_level() {
+    case "$2" in
+    off | minimal | low | medium | high | xhigh | max) ;;
+    *) die "invalid thinking level: $2" ;;
     esac
 }
 
@@ -154,18 +161,20 @@ printf '\n=== %s turn %s: parent prompt ===\n' "$worker" "$turn"
 cat "$turn_dir/prompt"
 printf '\n=== %s turn %s: subagent output ===\n' "$worker" "$turn"
 if cd "$cwd"; then
+  pi_args=(--session-dir "$pi_session_dir")
   if [ "$mode" = initial ]; then
-    cat "$turn_dir/prompt" |
-      pi --session-dir "$pi_session_dir" \
-        --session-id "$sid" --name "subagent:$worker" -p 2>&1 |
-      tee "$turn_dir/output"
-    rc=${PIPESTATUS[1]}
+    pi_args+=(--session-id "$sid" --name "subagent:$worker")
   else
-    cat "$turn_dir/prompt" |
-      pi --session-dir "$pi_session_dir" --session "$sid" -p 2>&1 |
-      tee "$turn_dir/output"
-    rc=${PIPESTATUS[1]}
+    pi_args+=(--session "$sid")
   fi
+  [ ! -f "$turn_dir/provider" ] || pi_args+=(--provider "$(cat "$turn_dir/provider")")
+  [ ! -f "$turn_dir/model" ] || pi_args+=(--model "$(cat "$turn_dir/model")")
+  [ ! -f "$turn_dir/thinking" ] || pi_args+=(--thinking "$(cat "$turn_dir/thinking")")
+
+  cat "$turn_dir/prompt" |
+    pi "${pi_args[@]}" -p 2>&1 |
+    tee "$turn_dir/output"
+  rc=${PIPESTATUS[1]}
 else
   printf 'Could not enter working directory: %s\n' "$cwd" |
     tee "$turn_dir/output"
@@ -176,6 +185,15 @@ printf '%s\n' "$rc" >"$turn_dir/exit.tmp"
 mv "$turn_dir/exit.tmp" "$turn_dir/exit"
 RUNNER
     chmod +x "$worker_dir/run.sh"
+}
+
+write_turn_override() {
+    local turn_dir="$1"
+    local name="$2"
+    local value="$3"
+
+    [ -n "$value" ] || return
+    printf '%s\n' "$value" >"$turn_dir/$name"
 }
 
 ensure_tmux_session() {
@@ -202,12 +220,15 @@ start_turn() {
 launch_worker() {
     local allocation="$1"
     shift
-    [ "$#" -ge 1 ] || die "usage: $program launch WORKER [--cwd PATH] [--delay SECONDS]"
+    [ "$#" -ge 1 ] || die "usage: $program launch WORKER [--cwd PATH] [--delay SECONDS] [--provider NAME] [--model MODEL] [--thinking LEVEL]"
 
     local requested_name="$1"
     local worker="$requested_name"
     local cwd="$PWD"
     local delay=0
+    local provider_override=""
+    local model_override=""
+    local thinking_override=""
     local number=1
     shift
 
@@ -223,6 +244,22 @@ launch_worker() {
             delay="$2"
             shift 2
             ;;
+        --provider)
+            [ "$#" -ge 2 ] && [ -n "$2" ] || die "--provider requires a name"
+            provider_override="$2"
+            shift 2
+            ;;
+        --model)
+            [ "$#" -ge 2 ] && [ -n "$2" ] || die "--model requires a model"
+            model_override="$2"
+            shift 2
+            ;;
+        --thinking)
+            [ "$#" -ge 2 ] && [ -n "$2" ] || die "--thinking requires a level"
+            validate_thinking_level "thinking level" "$2"
+            thinking_override="$2"
+            shift 2
+            ;;
         -h | --help)
             usage
             return
@@ -230,6 +267,10 @@ launch_worker() {
         *) die "unknown launch option: $1" ;;
         esac
     done
+
+    if [ -n "$provider_override" ] && [ -z "$model_override" ]; then
+        die "--provider requires --model"
+    fi
 
     if [ "$allocation" = next ]; then
         validate_component "worker prefix" "$requested_name"
@@ -279,6 +320,9 @@ launch_worker() {
     printf '%s\n' 1 >"$worker_dir/latest-turn"
     printf '%s\n' initial >"$turn_dir/mode"
     printf '%s\n' "$delay" >"$turn_dir/delay"
+    write_turn_override "$turn_dir" provider "$provider_override"
+    write_turn_override "$turn_dir" model "$model_override"
+    write_turn_override "$turn_dir" thinking "$thinking_override"
     cat >"$turn_dir/prompt"
     write_runner "$worker_dir"
 
@@ -291,7 +335,43 @@ launch_worker() {
 }
 
 resume_worker() {
-    [ "$#" -eq 1 ] || die "usage: $program resume WORKER"
+    [ "$#" -ge 1 ] || die "usage: $program resume WORKER [--provider NAME] [--model MODEL] [--thinking LEVEL]"
+
+    local worker="$1"
+    local provider_override=""
+    local model_override=""
+    local thinking_override=""
+    shift
+
+    while [ "$#" -gt 0 ]; do
+        case "$1" in
+        --provider)
+            [ "$#" -ge 2 ] && [ -n "$2" ] || die "--provider requires a name"
+            provider_override="$2"
+            shift 2
+            ;;
+        --model)
+            [ "$#" -ge 2 ] && [ -n "$2" ] || die "--model requires a model"
+            model_override="$2"
+            shift 2
+            ;;
+        --thinking)
+            [ "$#" -ge 2 ] && [ -n "$2" ] || die "--thinking requires a level"
+            validate_thinking_level "thinking level" "$2"
+            thinking_override="$2"
+            shift 2
+            ;;
+        -h | --help)
+            usage
+            return
+            ;;
+        *) die "unknown resume option: $1" ;;
+        esac
+    done
+
+    if [ -n "$provider_override" ] && [ -z "$model_override" ]; then
+        die "--provider requires --model"
+    fi
 
     require_command pi
     require_command tmux
@@ -304,20 +384,23 @@ resume_worker() {
     local turn_dir
     local sid
     parent_dir="$(resolve_parent_dir)" || exit $?
-    worker_dir="$(resolve_worker "$parent_dir" "$1")" || exit $?
+    worker_dir="$(resolve_worker "$parent_dir" "$worker")" || exit $?
     previous_turn_dir="$(latest_turn_dir "$worker_dir")" || exit $?
     previous_turn="$(cat "$worker_dir/latest-turn")"
 
     if [ -f "$previous_turn_dir/exit" ]; then
-        die "worker completion is unconsumed; call wait-any or wait-all first: $1"
+        die "worker completion is unconsumed; call wait-any or wait-all first: $worker"
     fi
-    [ -f "$previous_turn_dir/done" ] || die "worker is still running: $1"
+    [ -f "$previous_turn_dir/done" ] || die "worker is still running: $worker"
 
     turn=$((previous_turn + 1))
     turn_dir="$worker_dir/turns/$turn"
-    mkdir "$turn_dir" || die "cannot create turn $turn for worker: $1"
+    mkdir "$turn_dir" || die "cannot create turn $turn for worker: $worker"
     printf '%s\n' resume >"$turn_dir/mode"
     printf '%s\n' 0 >"$turn_dir/delay"
+    write_turn_override "$turn_dir" provider "$provider_override"
+    write_turn_override "$turn_dir" model "$model_override"
+    write_turn_override "$turn_dir" thinking "$thinking_override"
     cat >"$turn_dir/prompt"
     printf '%s\n' "$turn" >"$worker_dir/latest-turn.tmp"
     mv "$worker_dir/latest-turn.tmp" "$worker_dir/latest-turn"
@@ -325,11 +408,11 @@ resume_worker() {
 
     if ! start_turn "$worker_dir" "$turn"; then
         printf '%s\n' 125 >"$turn_dir/exit"
-        die "failed to resume worker: $1"
+        die "failed to launch worker: $worker"
     fi
 
     sid="$(cat "$worker_dir/session-id")"
-    printf 'WORKER=%s\nTURN=%s\nSESSION_ID=%s\n' "$1" "$turn" "$sid"
+    printf 'WORKER=%s\nTURN=%s\nSESSION_ID=%s\n' "$worker" "$turn" "$sid"
 }
 
 selected_turns() {

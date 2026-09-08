@@ -45,9 +45,9 @@ No run needs to be created or carried between bash calls. Workers are automatica
 ## Commands
 
 ```text
-subagent launch WORKER [--cwd PATH] [--delay SECONDS] < PROMPT
-subagent launch-next PREFIX [--cwd PATH] [--delay SECONDS] < PROMPT
-subagent resume WORKER < PROMPT
+subagent launch WORKER [--cwd PATH] [--delay SECONDS] [--provider NAME] [--model MODEL] [--thinking LEVEL] < PROMPT
+subagent launch-next PREFIX [--cwd PATH] [--delay SECONDS] [--provider NAME] [--model MODEL] [--thinking LEVEL] < PROMPT
+subagent resume WORKER [--provider NAME] [--model MODEL] [--thinking LEVEL] < PROMPT
 subagent wait-any WORKER...
 subagent wait-all WORKER...
 subagent output WORKER
@@ -62,6 +62,25 @@ Run `subagent --help` for a summary. `--delay` exists for deterministic orchestr
 ## Launch
 
 `launch` reads the prompt from stdin, starts turn 1 in detached tmux, and returns immediately:
+
+When model options are omitted, Pi uses its normal startup selection from settings and project configuration. The options are passed directly to Pi and support the same forms as Pi's CLI:
+
+* `--model MODEL`
+* `--provider PROVIDER --model MODEL`
+* `--model PROVIDER/MODEL`
+* `--model MODEL:LEVEL`
+* `--thinking LEVEL`
+
+Supported thinking levels are `off`, `minimal`, `low`, `medium`, `high`, `xhigh`, and `max`. An explicit `--thinking` value takes precedence over a `:LEVEL` suffix.
+When using `--provider`, also provide `--model`; alternatively, use a provider-qualified model such as `--model PROVIDER/MODEL`.
+
+For example:
+
+```bash
+subagent launch reviewer --model openai-codex/gpt-5.6-luna --thinking xhigh <<'EOF'
+Review the implementation and report concrete findings. Do not modify files.
+EOF
+```
 
 ```bash
 subagent launch tests <<'EOF'
@@ -100,6 +119,8 @@ SESSION_ID=<session-id>
 ```
 
 Use the worker name with later commands. The session ID is diagnostic information.
+
+Launch model and thinking overrides are recorded in the Pi session. A resume without overrides keeps the worker's latest session selection.
 
 A child does not inherit the parent's conversation. Give it enough context to work independently:
 
@@ -149,7 +170,7 @@ Completions remain on disk until consumed, so none are lost. If multiple selecte
 The current turn must be complete and consumed before it can be resumed:
 
 ```bash
-subagent resume reviewer <<'EOF'
+subagent resume reviewer --model anthropic/claude-fable-5 --thinking high <<'EOF'
 Now inspect the tests and determine whether they cover the problems you found.
 EOF
 
@@ -157,7 +178,7 @@ worker="$(subagent wait-any reviewer)"
 subagent output "$worker"
 ```
 
-`resume` creates the next turn, restores the same Pi session in its original working directory, and starts a new tmux session under the worker's deterministic tmux name. It returns immediately and prints the worker name, turn number, and stable Pi session ID.
+`resume` creates the next turn, restores the same Pi session in its original working directory, and starts a new tmux session under the worker's deterministic tmux name. It returns immediately and prints the worker name, turn number, and stable Pi session ID. Optional model and thinking flags override the selection for that turn and are persisted in the session for later turns.
 
 A resumed Pi process reconstructs conversation history but not process-local memory, open connections, or handles.
 
@@ -208,6 +229,9 @@ Data is stored outside the project:
         turns/<N>/
             mode
             prompt
+            provider                # optional Pi provider override
+            model                   # optional Pi model override
+            thinking                # optional Pi thinking-level override
             output
             exit                    # completed, not consumed
             done                    # completed, consumed
