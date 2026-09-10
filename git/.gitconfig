@@ -28,6 +28,7 @@
     features = catppuccin-latte
     navigate = true  # use n and N to move between diff sections
     side-by-side = true
+    true-color = always
     ; syntax-theme = "Solarized (light)"
 
 [merge]
