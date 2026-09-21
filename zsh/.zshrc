@@ -110,7 +110,6 @@ source $ZSH/oh-my-zsh.sh
 
 
 if [ -n "${HOMEBREW_PREFIX+1}" ]; then
-    export PATH=$HOMEBREW_PREFIX/sbin:$PATH
     export C_INCLUDE_PATH="$HOMEBREW_PREFIX/include:$C_INCLUDE_PATH"
     export CPLUS_INCLUDE_PATH="$HOMEBREW_PREFIX/include:$CPLUS_INCLUDE_PATH"
     export LIBRARY_PATH="$HOMEBREW_PREFIX/lib:$LIBRARY_PATH"
