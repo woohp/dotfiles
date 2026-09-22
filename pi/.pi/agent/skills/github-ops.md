@@ -13,9 +13,6 @@ Use the `gh` CLI for tasks that interact with GitHub, such as:
 - Running or inspecting GitHub Actions workflows
 - Managing GitHub repositories through the GitHub API
 
-Use `git` instead when the task only requires local version-control
-operations, such as committing, branching, merging, rebasing, or pushing.
-
 Assume `gh` is usually installed. If it is unavailable, ask the user to
 install and authenticate it.
 
