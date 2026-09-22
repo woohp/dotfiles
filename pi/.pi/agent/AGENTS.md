@@ -2,60 +2,52 @@
 
 These are default working principles. Project-local `AGENTS.md` files override them for project-specific commands, architecture, and conventions.
 
-## Operating style
+## Working style
 
-- Keep it simple. Prefer the smallest maintainable change that solves the actual problem. Reuse existing patterns instead of introducing new abstractions, broad refactors, speculative helpers, or clever architecture unless clearly justified.
-- Ask when anything is unclear.
-- Do not delete or drop databases, including dev databases, unless you created them. If unsure, ask.
-- Do not duplicate language-enforced guarantees with runtime checks for internal typed values. Validate only at untyped boundaries (e.g. parsed storage or network input) and for semantic constraints the type system cannot express.
-- `fd`, `rg`, `eza`, `bat`, `ast-grep/sg`, `wget`, `curl`, `qsv` are available; use them when appropriate.
-- Prefer CLI tools when they fit the task well, over python code.
-- When done with code changes, run linters and formatters, then fix any remaining issues they do not handle.
-  - Do not run linters or formatters after every edit. Optimize for speed during editing, even if the intermediate code is messy.
-- After substantial structural changes, update the local `AGENTS.md` if needed.
-- Work efficiently. For example, prefer `cp` over recreating files from scratch.
-  - Prefer reusable script files over one-off commands, especially for anything beyond a few lines. Copy and adapt them when useful.
-- Protect context usage. Any command with unknown or potentially large output must be scoped and byte-capped. If output is large but is low noise and all important, then no need to cap.
-  - Byte-cap large or unpredictable output. Line limits alone are unsafe because a single line may be huge.
+- Prefer the smallest maintainable change that solves the actual problem. Reuse existing patterns; avoid speculative abstractions, unnecessary wrappers, unrelated refactors, and defensive handling for impossible internal states.
+- Resolve ambiguity from the repository, tests, docs, and existing patterns when reasonably possible. Ask only when it materially affects behavior or requires an important assumption.
+- Do not delete or drop databases, including dev databases, unless you created them for the current task. If unsure, ask.
+- Do not add runtime validation for invariants already guaranteed by the language or type system. Validate at untyped boundaries and for semantic constraints the type system cannot express.
+- Do not broaden the task merely to clean up nearby code.
+- Please remove all mannered prose.
 
-    ```
-    COMMAND 2>&1 | head -c 4000  # or tail
-    ```
+## Tools and context
 
-  - Scope before printing content: list files first, search specific paths, count matches when useful, and avoid reading generated, binary, minified, database, or huge JSON/JSONL files unless required.
-  - Preserve exit codes when needed:
+- `fd`, `rg`, `eza`, `bat`, `ast-grep`/`sg`, `wget`, `curl`, and `qsv` are available; prefer them over older equivalents when appropriate.
+- Prefer an existing CLI tool or simple shell pipeline over ad-hoc Python. Use Python when it materially simplifies structured parsing or nontrivial logic.
+- Scope searches and reads before widening them. Avoid dumping large directories, diffs, logs, generated/minified files, databases, or huge JSON/JSONL into context.
+- Byte-cap unknown or potentially large output; line limits alone are unsafe.
 
-    ```
-    COMMAND | tail -c 5000
-    status=${PIPESTATUS[0]}
-    exit "$status"
-    ```
+  ```sh
+  COMMAND 2>&1 | head -c 4000  # or tail
+  ```
 
-    Or use an equivalent approach.
+  Preserve the underlying command's exit status when it matters.
 
-  - Avoid unbounded cat, broad rg, find, ls -R, git diff, and similar commands.
-  - Disable progress bars whenever possible, even temporarily.
-  - Suppress excessively noisy logs whenever possible, even temporarily.
-- Never let a command block on an interactive editor or pager; in this non-interactive shell it hangs until killed. Use `GIT_EDITOR=true git rebase --continue`, `git commit -m`/`-F -`, `--no-edit`, and `--no-pager`/`PAGER=cat`.
-- Do not launch subagents or delegated-agent workflows unless the user explicitly asks for subagents, delegation, or a named multi-agent workflow in the current request. Task complexity alone is not permission. If delegation seems useful but was not requested, ask for permission. Explicit approval applies to that request or workflow only; do not treat it as a standing default for later requests.
-- Keep project-local AGENTS.md files updated only with important, durable, non-obvious decisions, and not file listings, product feature details, transient status, review history, or facts obvious from the code.
+  ```
+  COMMAND | tail -c 5000
+  status=${PIPESTATUS[0]}
+  exit "$status"
+  ```
 
-## Code quality principles
+- Disable progress bars and excessively noisy logs when practical.
+- Never let commands block on an interactive editor or pager; use non-interactive flags or environment variables. Example: `GIT_EDITOR=true git rebase --continue`, `git commit -m/-F -`, `--no-edit`, and `--no-pager/PAGER=cat`.
+- For nontrivial temporary logic, prefer a small script over a complicated shell one-liner. Add scripts to the repo only when useful beyond the current task.
 
-- Prefer clear, maintainable, working software over rigid adherence to any rule.
+## Subagents
+
+- Do not launch subagents or delegated workflows without explicit user approval for the current task.
+- Proactively suggest them when work can be cleanly partitioned, especially for parallel code exploration, independent investigation, bulk/repetitive implementation, or large reviews. Briefly say what would be delegated and why.
+- Approval is task-specific, not a standing default.
+
+## Code and validation
+
 - Follow the stepdown rule where possible: if `A` calls `B`, define `A` before `B` so files read top-down.
-- Keep functions focused at one level of abstraction.
-- Keep error handling explicit but out of the way of the main business flow when possible.
-- Use strong types/contracts where available: type annotations, structs/classes, pattern matching, guards, schemas, or clear data shapes.
-- Avoid slop at all costs. Slop is any unnecessary code or abstractions that expanded scope or overengineered simple tasks. Examples include defensive clauses for inputs no caller supplies, redundant wrappers, speculative flexibility, and elaborate machinery for straightforward operations.
+- After edits are stable, run the relevant formatter, linter, type checks, tests, and build steps. Match validation effort to the scope and risk of the change.
+- Add or update tests when behavior changes or when fixing a regression; prefer outcome-focused tests over implementation details.
+- Update docs when behavior, commands, public APIs, architecture, or operational steps change.
 
-## Testing and validation
+## AGENTS.md hygiene
 
-- Match checks to risk: docs-only may need none; small edits need targeted checks; substantial changes need broader tests/lint/build.
-- Test strategically. Prioritize important behavior, cover happy paths at minimum, and add edge/regression tests when valuable.
-- Avoid blind, noisy, brittle, or low-value tests. Drop them or ask if uncertain.
-- Prefer outcome-focused tests over implementation-detail tests.
-
-## Documentation
-
-- Update docs when behavior, commands, public APIs, architecture, or operational steps change; keep agent instructions concise and durable.
+- Update project-local `AGENTS.md` only with important, durable, non-obvious guidance future agents need.
+- Do not add transient status, feature details, file listings, review history, or facts readily discoverable from the code.
