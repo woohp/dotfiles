@@ -5,15 +5,10 @@ These are default working principles. Project-local `AGENTS.md` files override t
 ## Operating style
 
 - Keep it simple. Prefer the smallest maintainable change that solves the actual problem. Reuse existing patterns instead of introducing new abstractions, broad refactors, speculative helpers, or clever architecture unless clearly justified.
-- Read before editing. Understand the surrounding code, existing patterns, and user intent first.
-- Make small, focused changes. Do not refactor or clean up unrelated code unless required.
-- Preserve existing style and abstractions unless there is a clear reason to change them.
 - Ask when anything is unclear.
 - Do not delete or drop databases, including dev databases, unless you created them. If unsure, ask.
-- Avoid excessive defensive coding. Do not handle unrealistic edge cases, especially in code we control.
-- Channel YAGNI within reason. Well-engineered and simple > slightly under-engineered > over-engineered.
 - Do not duplicate language-enforced guarantees with runtime checks for internal typed values. Validate only at untyped boundaries (e.g. parsed storage or network input) and for semantic constraints the type system cannot express.
-- `fd`, `rg`, `eza`, `bat`, `ast-grep/sg`, `wget`, `curl` are available; use them when appropriate.
+- `fd`, `rg`, `eza`, `bat`, `ast-grep/sg`, `wget`, `curl`, `qsv` are available; use them when appropriate.
 - Prefer CLI tools when they fit the task well, over python code.
 - When done with code changes, run linters and formatters, then fix any remaining issues they do not handle.
   - Do not run linters or formatters after every edit. Optimize for speed during editing, even if the intermediate code is messy.
@@ -43,7 +38,7 @@ These are default working principles. Project-local `AGENTS.md` files override t
   - Suppress excessively noisy logs whenever possible, even temporarily.
 - Never let a command block on an interactive editor or pager; in this non-interactive shell it hangs until killed. Use `GIT_EDITOR=true git rebase --continue`, `git commit -m`/`-F -`, `--no-edit`, and `--no-pager`/`PAGER=cat`.
 - Do not launch subagents or delegated-agent workflows unless the user explicitly asks for subagents, delegation, or a named multi-agent workflow in the current request. Task complexity alone is not permission. If delegation seems useful but was not requested, ask for permission. Explicit approval applies to that request or workflow only; do not treat it as a standing default for later requests.
-- Keep project-local AGENTS.md files updated only with important, durable, non-obvious decisions, and not file listings, transient status, review history, or facts obvious from the code.
+- Keep project-local AGENTS.md files updated only with important, durable, non-obvious decisions, and not file listings, product feature details, transient status, review history, or facts obvious from the code.
 
 ## Code quality principles
 
@@ -52,7 +47,7 @@ These are default working principles. Project-local `AGENTS.md` files override t
 - Keep functions focused at one level of abstraction.
 - Keep error handling explicit but out of the way of the main business flow when possible.
 - Use strong types/contracts where available: type annotations, structs/classes, pattern matching, guards, schemas, or clear data shapes.
-- Follow the Boy Scout Rule, without expanding scope unnecessarily.
+- Avoid slop at all costs. Slop is any unnecessary code or abstractions that expanded scope or overengineered simple tasks. Examples include defensive clauses for inputs no caller supplies, redundant wrappers, speculative flexibility, and elaborate machinery for straightforward operations.
 
 ## Testing and validation
 
@@ -60,7 +55,6 @@ These are default working principles. Project-local `AGENTS.md` files override t
 - Test strategically. Prioritize important behavior, cover happy paths at minimum, and add edge/regression tests when valuable.
 - Avoid blind, noisy, brittle, or low-value tests. Drop them or ask if uncertain.
 - Prefer outcome-focused tests over implementation-detail tests.
-- Report what checks were run and what was skipped.
 
 ## Documentation
 
