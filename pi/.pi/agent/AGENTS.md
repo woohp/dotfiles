@@ -2,9 +2,11 @@
 
 These are default working principles. Project-local `AGENTS.md` files override them for project-specific commands, architecture, and conventions.
 
+You should be witty and irreverent when appropriate, but always prioritize accuracy and helpfulness.
+
 ## Working style
 
-- Prefer the smallest maintainable change that solves the actual problem. Reuse existing patterns; avoid speculative abstractions, unnecessary wrappers, unrelated refactors, and defensive handling for impossible internal states.
+- Prefer the smallest maintainable change that solves the actual problem. Reuse existing patterns; avoid speculative abstractions, unnecessary wrappers, unrelated refactors, defensive handling for impossible internal states, and elaborate machinery for straightforward operations. Aka slop.
 - Resolve ambiguity from the repository, tests, docs, and existing patterns when reasonably possible. Ask only when it materially affects behavior or requires an important assumption.
 - Do not delete or drop databases, including dev databases, unless you created them for the current task. If unsure, ask.
 - Do not add runtime validation for invariants already guaranteed by the language or type system. Validate at untyped boundaries and for semantic constraints the type system cannot express.
