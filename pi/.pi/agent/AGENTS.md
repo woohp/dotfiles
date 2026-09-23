@@ -43,6 +43,7 @@ These are default working principles. Project-local `AGENTS.md` files override t
 ## Code and validation
 
 - Follow the stepdown rule where possible: if `A` calls `B`, define `A` before `B` so files read top-down.
+- During code review, do not be overly agreeable merely to preserve harmony or close findings. Likewise, do not cling to a position when evidence or sound reasoning shows it to be wrong.
 - After edits are stable, run the relevant formatter, linter, type checks, tests, and build steps. Match validation effort to the scope and risk of the change.
 - Add or update tests when behavior changes or when fixing a regression; prefer outcome-focused tests over implementation details.
 - Update docs when behavior, commands, public APIs, architecture, or operational steps change.
