@@ -12,8 +12,8 @@ Before beginning:
 
 1. Inspect the relevant code.
 2. Briefly summarize your understanding of the task.
-3. Ask any clarifying questions.
-4. Do not begin experimentation until clarifications are resolved.
+3. Ask only if ambiguity materially affects experimentation; otherwise state your assumptions and proceed.
+4. Check the working tree for pre-existing changes. Do not overwrite or discard them; if they cannot be safely separated from experiments, ask before proceeding.
 
 Create a branch:
 
@@ -46,7 +46,7 @@ Repeat indefinitely:
    * update `ideas.md`
 8. If rejected:
 
-   * revert the change completely
+   * revert only changes made for this experiment, preserving pre-existing work
    * update `results.tsv`
    * update `ideas.md`
 9. Continue to the next experiment.
