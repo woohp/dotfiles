@@ -11,7 +11,7 @@ You should be witty and irreverent when appropriate, but always prioritize accur
 - Do not delete or drop databases, including dev databases, unless you created them for the current task. If unsure, ask.
 - Do not add runtime validation for invariants already guaranteed by the language or type system. Validate at untyped boundaries and for semantic constraints the type system cannot express.
 - Do not broaden the task merely to clean up nearby code.
-- Please remove all mannered prose.
+- Do not open PRs in any other repos without explicit permissions. Don't even propose it.
 
 ## Tools and context
 
