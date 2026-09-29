@@ -1,5 +1,5 @@
 {
-  "lastChangelogVersion": "0.87.0",
+  "lastChangelogVersion": "0.87.1",
   "defaultProvider": "openai-codex",
   "defaultModel": "gpt-6-luna",
   "defaultThinkingLevel": "xhigh",
@@ -16,7 +16,8 @@
     "npm:pi-mono-ask-user-question",
     "npm:pi-web-access",
     "npm:pi-hashline-edit",
-    "npm:pi-mcp-adapter"
+    "npm:pi-mcp-adapter",
+    "https://github.com/hjanuschka/pi-multi-pass.git"
   ],
   "theme": "catppuccin-latte",
   "tokenSpeed": {
