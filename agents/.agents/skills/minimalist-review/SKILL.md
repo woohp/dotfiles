@@ -1,10 +1,11 @@
 ---
-description: Review for minimalist implementation, cohesive abstractions, and slop
+name: minimalist-review
+description: Review code for minimalist implementation, cohesive abstractions, and unnecessary complexity (slop). Use when asked for a minimalist review, slop review, or maintainability-focused simplification review of production or test code.
 ---
 
 # Minimalist Review
 
-Review `$ARGUMENTS`. Inspect relevant files as needed. Do not make changes unless explicitly asked.
+Review the scope specified by the user or established in the conversation. If the scope is unclear, ask before reviewing. Inspect relevant files as needed. Do not make changes unless explicitly asked.
 
 Prioritize minimalist, clean implementation, cohesive abstractions, and long-term maintenance. Apply this lens equally to production and test code. Prefer fewer LOC when clarity and cohesion are preserved; brevity is not decisive.
 
