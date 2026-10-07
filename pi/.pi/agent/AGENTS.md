@@ -48,6 +48,8 @@ You should be witty and irreverent when appropriate, but always prioritize accur
 - During code review, do not be overly agreeable merely to preserve harmony or close findings. Likewise, do not cling to a position when evidence or sound reasoning shows it to be wrong.
 - After edits are stable, run the relevant formatter, linter, type checks, tests, and build steps. Match validation effort to the scope and risk of the change.
 - Add or update tests when behavior changes or when fixing a regression; prefer outcome-focused tests over implementation details.
+- Test strategically. Cover important happy paths, and add edge-case or regression tests when they protect meaningful behavior or realistic failures.
+- Avoid blind, noisy, brittle, redundant, or low-value tests. Remove clearly unnecessary tests; ask when their value is uncertain.
 - Update docs when behavior, commands, public APIs, architecture, or operational steps change.
 
 ## AGENTS.md hygiene
