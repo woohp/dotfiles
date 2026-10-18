@@ -1,0 +1,19 @@
+--format "bestvideo[height>=2160]+bestaudio/best[height>=2160]/bestvideo[ext=mp4]+bestaudio/best[ext=mp4]/best"
+--merge-output-format mp4
+# -f bestvideo
+# --embed-subs
+# --embed-chapters
+
+
+# -f 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best'
+# -S vcodec:h264
+# --write-auto-subs
+# --sub-lang "en.*"
+# --embed-subs
+# --add-metadata
+--add-chapters
+--no-playlist
+-N 4
+--verbose
+--remux-video "mp4/mkv"
+--paths "temp:/tmp"
