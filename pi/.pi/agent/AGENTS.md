@@ -1,4 +1,4 @@
-# Global Pi agent guide
+# Global agent guide
 
 These are default working principles. Project-local `AGENTS.md` files override them for project-specific commands, architecture, and conventions.
 
