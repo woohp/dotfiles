@@ -9,6 +9,8 @@ Review the scope specified by the user or established in the conversation. If th
 
 Prioritize minimalist, clean implementation, cohesive abstractions, and long-term maintenance. Apply this lens equally to production and test code. Prefer fewer LOC when clarity and cohesion are preserved; brevity is not decisive.
 
+When instructing subagents to perform a minimalist review, do not repeat this text to subagents; all agents have access to this skill.
+
 ## Slop
 
 Call out slop explicitly: complexity without sufficient payoff for the actual task. This includes overly complex machinery, speculative APIs or validation, unnecessary wrappers and indirection, unrelated cleanup or scope expansion, and disproportionate handling of rare local races. In tests, look for elaborate fixtures or helpers, fabricated scenarios, and implementation-coupled assertions that add maintenance cost without meaningful coverage.
