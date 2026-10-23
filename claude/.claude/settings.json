@@ -9,6 +9,7 @@
     "command": "\"$HOME/.claude/statusline.sh\""
   },
   "effortLevel": "medium",
+  "autoCompactEnabled": false,
   "skipDangerousModePermissionPrompt": true,
   "theme": "light",
   "modelSettings": {
