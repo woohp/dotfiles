@@ -12,6 +12,7 @@ You should be witty and irreverent when appropriate, but always prioritize accur
 - Do not add runtime validation for invariants already guaranteed by the language or type system. Validate at untyped boundaries and for semantic constraints the type system cannot express.
 - Do not broaden the task merely to clean up nearby code.
 - Do not open PRs in any other repos without explicit permissions. Don't even propose it.
+- Default to squash-merging PRs with a single coherent commit message. After merging, delete the local branch and update local `master` (or the default branch), unless inappropriate.
 
 ## Tools and context
 
