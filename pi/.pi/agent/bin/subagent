@@ -7,8 +7,8 @@ program="${0##*/}"
 usage() {
     cat <<'EOF'
 Usage:
-  subagent launch WORKER [--cwd PATH] [--delay SECONDS] [--provider NAME] [--model MODEL] [--thinking LEVEL] < PROMPT
-  subagent launch-next PREFIX [--cwd PATH] [--delay SECONDS] [--provider NAME] [--model MODEL] [--thinking LEVEL] < PROMPT
+  subagent launch WORKER [--cwd PATH] [--provider NAME] [--model MODEL] [--thinking LEVEL] < PROMPT
+  subagent launch-next PREFIX [--cwd PATH] [--provider NAME] [--model MODEL] [--thinking LEVEL] < PROMPT
   subagent resume WORKER [--provider NAME] [--model MODEL] [--thinking LEVEL] < PROMPT
   subagent wait-any WORKER...
   subagent wait-all WORKER...
@@ -21,7 +21,7 @@ Usage:
 Commands:
   launch       Launch a specifically named worker's initial turn.
   launch-next  Atomically launch the first available PREFIX-N worker.
-  resume       Launch a follow-up turn in a tmux session.
+  resume       Launch a worker's next turn in the background.
   wait-any     Wait for and claim one selected worker completion.
   wait-all     Wait for and claim all selected worker completions.
   output       Print a worker's latest turn output.
@@ -58,14 +58,7 @@ absolute_dir() {
 
 validate_component() {
     case "$2" in
-    '' | *[!A-Za-z0-9._-]* | [.-]*) die "invalid $1: $2" ;;
-    esac
-}
-
-validate_thinking_level() {
-    case "$2" in
-    off | minimal | low | medium | high | xhigh | max) ;;
-    *) die "invalid thinking level: $2" ;;
+    '' | *[!A-Za-z0-9_-]* | -*) die "invalid $1: $2" ;;
     esac
 }
 
@@ -102,29 +95,12 @@ resolve_parent_dir() {
     printf '%s\n' "$parent_dir"
 }
 
-migrate_legacy_worker() {
-    local worker_dir="$1"
-    local turn_dir="$worker_dir/turns/1"
-    local file
-
-    [ ! -d "$worker_dir/turns" ] || return
-    mkdir -p "$turn_dir"
-    printf '%s\n' initial >"$turn_dir/mode"
-    printf '%s\n' 1 >"$worker_dir/latest-turn"
-
-    for file in prompt output delay exit done; do
-        [ -f "$worker_dir/$file" ] && cp "$worker_dir/$file" "$turn_dir/$file"
-    done
-    [ -f "$turn_dir/delay" ] || printf '%s\n' 0 >"$turn_dir/delay"
-}
-
 resolve_worker() {
     local parent_dir="$1"
     local worker="$2"
     local worker_dir="$parent_dir/workers/$worker"
     validate_component "worker name" "$worker"
     [ -d "$worker_dir" ] || die "worker does not exist: $worker"
-    migrate_legacy_worker "$worker_dir"
     printf '%s\n' "$worker_dir"
 }
 
@@ -139,96 +115,90 @@ latest_turn_dir() {
     printf '%s\n' "$worker_dir/turns/$turn"
 }
 
-write_runner() {
-    local worker_dir="$1"
-
-    cat >"$worker_dir/run.sh" <<'RUNNER'
-#!/usr/bin/env bash
-set +e
-
-worker_dir="$(cd "$(dirname "$0")" && pwd -P)"
-turn="$1"
-turn_dir="$worker_dir/turns/$turn"
-sid="$(cat "$worker_dir/session-id")"
-cwd="$(cat "$worker_dir/cwd")"
-pi_session_dir="$(cat "$worker_dir/pi-session-dir")"
-worker="$(basename "$worker_dir")"
-mode="$(cat "$turn_dir/mode")"
-delay="$(cat "$turn_dir/delay")"
-
-sleep "$delay"
-printf '\n=== %s turn %s: parent prompt ===\n' "$worker" "$turn"
-cat "$turn_dir/prompt"
-printf '\n=== %s turn %s: subagent output ===\n' "$worker" "$turn"
-if cd "$cwd"; then
-  pi_args=(--session-dir "$pi_session_dir")
-  if [ "$mode" = initial ]; then
-    pi_args+=(--session-id "$sid" --name "subagent:$worker")
-  else
-    pi_args+=(--session "$sid")
-  fi
-  [ ! -f "$turn_dir/provider" ] || pi_args+=(--provider "$(cat "$turn_dir/provider")")
-  [ ! -f "$turn_dir/model" ] || pi_args+=(--model "$(cat "$turn_dir/model")")
-  [ ! -f "$turn_dir/thinking" ] || pi_args+=(--thinking "$(cat "$turn_dir/thinking")")
-
-  cat "$turn_dir/prompt" |
-    pi "${pi_args[@]}" -p 2>&1 |
-    tee "$turn_dir/output"
-  rc=${PIPESTATUS[1]}
-else
-  printf 'Could not enter working directory: %s\n' "$cwd" |
-    tee "$turn_dir/output"
-  rc=125
-fi
-
-printf '%s\n' "$rc" >"$turn_dir/exit.tmp"
-mv "$turn_dir/exit.tmp" "$turn_dir/exit"
-RUNNER
-    chmod +x "$worker_dir/run.sh"
+add_pi_option() {
+    case "$1" in
+    --provider | --model | --thinking)
+        [ "$#" -ge 2 ] && [ -n "$2" ] || die "$1 requires a value"
+        pi_options+=("$1" "$2")
+        ;;
+    *) die "unknown option: $1" ;;
+    esac
 }
 
-write_turn_override() {
-    local turn_dir="$1"
-    local name="$2"
-    local value="$3"
-
-    [ -n "$value" ] || return
-    printf '%s\n' "$value" >"$turn_dir/$name"
-}
-
-ensure_tmux_session() {
-    local tmux_name="$1"
-
-    if ! tmux has-session -t "$tmux_name" 2>/dev/null; then
-        tmux new-session -d -s "$tmux_name" || return
-    fi
-
-    tmux set-option -t "$tmux_name" remain-on-exit off >/dev/null || return
+write_pi_options() {
+    [ "${#pi_options[@]}" -eq 0 ] || printf '%s\n' "${pi_options[@]}" >"$1/pi-options"
 }
 
 start_turn() {
-    local worker_dir="$1"
-    local turn="$2"
-    local tmux_name
-    tmux_name="$(cat "$worker_dir/tmux-name")"
+    local turn_dir="$1"
 
-    ensure_tmux_session "$tmux_name" || return
-    tmux respawn-pane -k -t "$tmux_name:0.0" \
-        "$(printf %q "$worker_dir/run.sh") $(printf %q "$turn")"
+    # Job control gives the turn its own process group, so it survives the
+    # caller's process-group kill and can be cancelled as a group.
+    set -m
+    nohup "$(realpath "$0")" __run "$turn_dir" </dev/null >/dev/null 2>&1 &
+    set +m
+    printf '%s\n' "$!" >"$turn_dir/pid"
+}
+
+run_turn() {
+    local turn_dir="$1"
+    local worker_dir="${turn_dir%/turns/*}"
+    local turn="${turn_dir##*/}"
+    local worker="${worker_dir##*/}"
+    local sid
+    local cwd
+    local rc
+    local option
+    local pi_args
+    local cancelled=0
+    sid="$(cat "$worker_dir/session-id")"
+    cwd="$(cat "$worker_dir/cwd")"
+
+    # cancel signals the whole process group; Pi exits and the runner records it.
+    trap 'cancelled=1' TERM
+    if cd "$cwd"; then
+        pi_args=(--session-dir "$(cat "$worker_dir/pi-session-dir")")
+        if [ "$turn" = 1 ]; then
+            pi_args+=(--session-id "$sid" --name "subagent:$worker")
+        else
+            pi_args+=(--session "$sid")
+        fi
+        if [ -f "$turn_dir/pi-options" ]; then
+            while IFS= read -r option; do
+                pi_args+=("$option")
+            done <"$turn_dir/pi-options"
+        fi
+
+        pi "${pi_args[@]}" -p <"$turn_dir/prompt" >"$turn_dir/output" 2>&1
+        rc=$?
+    else
+        printf 'Could not enter working directory: %s\n' "$cwd" >"$turn_dir/output"
+        rc=125
+    fi
+    [ "$cancelled" -eq 0 ] || rc=cancelled
+
+    printf '%s\n' "$rc" >"$turn_dir/exit.tmp"
+    mv "$turn_dir/exit.tmp" "$turn_dir/exit"
+}
+
+turn_process_alive() {
+    local turn_dir="$1"
+    local pid
+
+    pid="$(cat "$turn_dir/pid" 2>/dev/null)" || return 1
+    # Match the command line too, so a reused PID is not mistaken for the turn.
+    ps -ww -p "$pid" -o command= 2>/dev/null | grep -qF -- "__run $turn_dir"
 }
 
 launch_worker() {
     local allocation="$1"
     shift
-    [ "$#" -ge 1 ] || die "usage: $program launch WORKER [--cwd PATH] [--delay SECONDS] [--provider NAME] [--model MODEL] [--thinking LEVEL]"
+    [ "$#" -ge 1 ] || die "usage: $program launch WORKER [--cwd PATH] [--provider NAME] [--model MODEL] [--thinking LEVEL]"
 
     local requested_name="$1"
     local worker="$requested_name"
     local cwd="$PWD"
-    local delay=0
-    local provider_override=""
-    local model_override=""
-    local thinking_override=""
+    local pi_options=()
     local number=1
     shift
 
@@ -237,50 +207,19 @@ launch_worker() {
         --cwd)
             [ "$#" -ge 2 ] || die "--cwd requires a path"
             cwd="$2"
-            shift 2
             ;;
-        --delay)
-            [ "$#" -ge 2 ] || die "--delay requires a number of seconds"
-            delay="$2"
-            shift 2
-            ;;
-        --provider)
-            [ "$#" -ge 2 ] && [ -n "$2" ] || die "--provider requires a name"
-            provider_override="$2"
-            shift 2
-            ;;
-        --model)
-            [ "$#" -ge 2 ] && [ -n "$2" ] || die "--model requires a model"
-            model_override="$2"
-            shift 2
-            ;;
-        --thinking)
-            [ "$#" -ge 2 ] && [ -n "$2" ] || die "--thinking requires a level"
-            validate_thinking_level "thinking level" "$2"
-            thinking_override="$2"
-            shift 2
-            ;;
-        -h | --help)
-            usage
-            return
-            ;;
-        *) die "unknown launch option: $1" ;;
+        *) add_pi_option "$@" ;;
         esac
+        shift 2
     done
-
-    if [ -n "$provider_override" ] && [ -z "$model_override" ]; then
-        die "--provider requires --model"
-    fi
 
     if [ "$allocation" = next ]; then
         validate_component "worker prefix" "$requested_name"
     else
         validate_component "worker name" "$worker"
     fi
-    [[ "$delay" =~ ^[0-9]+([.][0-9]+)?$ ]] || die "invalid delay: $delay"
     cwd="$(absolute_dir "$cwd")" || die "working directory does not exist: $cwd"
     require_command pi
-    require_command tmux
     require_command uuidgen
 
     local parent_dir
@@ -288,7 +227,6 @@ launch_worker() {
     local turn_dir
     local pi_session_dir
     local sid
-    local tmux_name
     parent_dir="$(ensure_parent_dir)" || exit $?
     pi_session_dir="$parent_dir/sessions"
 
@@ -311,70 +249,30 @@ launch_worker() {
     mkdir -p "$turn_dir" || die "cannot initialize worker: $worker"
 
     sid="$(uuidgen | tr '[:upper:]' '[:lower:]')"
-    tmux_name="pi-subagent-${PI_SESSION_ID}-${worker}"
 
     printf '%s\n' "$sid" >"$worker_dir/session-id"
     printf '%s\n' "$cwd" >"$worker_dir/cwd"
     printf '%s\n' "$pi_session_dir" >"$worker_dir/pi-session-dir"
-    printf '%s\n' "$tmux_name" >"$worker_dir/tmux-name"
     printf '%s\n' 1 >"$worker_dir/latest-turn"
-    printf '%s\n' initial >"$turn_dir/mode"
-    printf '%s\n' "$delay" >"$turn_dir/delay"
-    write_turn_override "$turn_dir" provider "$provider_override"
-    write_turn_override "$turn_dir" model "$model_override"
-    write_turn_override "$turn_dir" thinking "$thinking_override"
+    write_pi_options "$turn_dir"
     cat >"$turn_dir/prompt"
-    write_runner "$worker_dir"
-
-    if ! start_turn "$worker_dir" 1; then
-        printf '%s\n' 125 >"$turn_dir/exit"
-        die "failed to launch worker: $worker"
-    fi
-
-    printf 'WORKER=%s\nTURN=1\nSESSION_ID=%s\n' "$worker" "$sid"
+    start_turn "$turn_dir"
+    printf '%s\n' "$worker"
 }
 
 resume_worker() {
     [ "$#" -ge 1 ] || die "usage: $program resume WORKER [--provider NAME] [--model MODEL] [--thinking LEVEL]"
 
     local worker="$1"
-    local provider_override=""
-    local model_override=""
-    local thinking_override=""
+    local pi_options=()
     shift
 
     while [ "$#" -gt 0 ]; do
-        case "$1" in
-        --provider)
-            [ "$#" -ge 2 ] && [ -n "$2" ] || die "--provider requires a name"
-            provider_override="$2"
-            shift 2
-            ;;
-        --model)
-            [ "$#" -ge 2 ] && [ -n "$2" ] || die "--model requires a model"
-            model_override="$2"
-            shift 2
-            ;;
-        --thinking)
-            [ "$#" -ge 2 ] && [ -n "$2" ] || die "--thinking requires a level"
-            validate_thinking_level "thinking level" "$2"
-            thinking_override="$2"
-            shift 2
-            ;;
-        -h | --help)
-            usage
-            return
-            ;;
-        *) die "unknown resume option: $1" ;;
-        esac
+        add_pi_option "$@"
+        shift 2
     done
 
-    if [ -n "$provider_override" ] && [ -z "$model_override" ]; then
-        die "--provider requires --model"
-    fi
-
     require_command pi
-    require_command tmux
 
     local parent_dir
     local worker_dir
@@ -382,7 +280,6 @@ resume_worker() {
     local previous_turn
     local turn
     local turn_dir
-    local sid
     parent_dir="$(resolve_parent_dir)" || exit $?
     worker_dir="$(resolve_worker "$parent_dir" "$worker")" || exit $?
     previous_turn_dir="$(latest_turn_dir "$worker_dir")" || exit $?
@@ -396,23 +293,12 @@ resume_worker() {
     turn=$((previous_turn + 1))
     turn_dir="$worker_dir/turns/$turn"
     mkdir "$turn_dir" || die "cannot create turn $turn for worker: $worker"
-    printf '%s\n' resume >"$turn_dir/mode"
-    printf '%s\n' 0 >"$turn_dir/delay"
-    write_turn_override "$turn_dir" provider "$provider_override"
-    write_turn_override "$turn_dir" model "$model_override"
-    write_turn_override "$turn_dir" thinking "$thinking_override"
+    write_pi_options "$turn_dir"
     cat >"$turn_dir/prompt"
     printf '%s\n' "$turn" >"$worker_dir/latest-turn.tmp"
     mv "$worker_dir/latest-turn.tmp" "$worker_dir/latest-turn"
-    write_runner "$worker_dir"
-
-    if ! start_turn "$worker_dir" "$turn"; then
-        printf '%s\n' 125 >"$turn_dir/exit"
-        die "failed to launch worker: $worker"
-    fi
-
-    sid="$(cat "$worker_dir/session-id")"
-    printf 'WORKER=%s\nTURN=%s\nSESSION_ID=%s\n' "$worker" "$turn" "$sid"
+    start_turn "$turn_dir"
+    printf '%s\n' "$worker"
 }
 
 selected_turns() {
@@ -511,24 +397,15 @@ worker_exit_code() {
 
 turn_state() {
     local turn_dir="$1"
-    local marker
 
-    if [ -f "$turn_dir/done" ]; then
-        marker="$(cat "$turn_dir/done")"
-        if [ "$marker" = cancelled ]; then
-            printf 'cancelled\t%s\n' "$marker"
-        else
-            printf 'consumed\t%s\n' "$marker"
-        fi
-    elif [ -f "$turn_dir/exit" ]; then
-        marker="$(cat "$turn_dir/exit")"
-        if [ "$marker" = cancelled ]; then
-            printf 'cancelled\t%s\n' "$marker"
-        else
-            printf 'completed\t%s\n' "$marker"
-        fi
-    else
+    if turn_process_alive "$turn_dir"; then
         printf 'running\t-\n'
+    elif [ -f "$turn_dir/done" ]; then
+        printf 'consumed\t%s\n' "$(cat "$turn_dir/done")"
+    elif [ -f "$turn_dir/exit" ]; then
+        printf 'completed\t%s\n' "$(cat "$turn_dir/exit")"
+    else
+        printf 'lost\t-\n'
     fi
 }
 
@@ -548,7 +425,6 @@ run_status() {
     printf '%-20s %-6s %-10s %s\n' WORKER TURN STATE EXIT
     for worker_dir in "$parent_dir/workers"/*; do
         [ -d "$worker_dir" ] || continue
-        migrate_legacy_worker "$worker_dir"
         found=1
         turn="$(cat "$worker_dir/latest-turn")"
         turn_dir="$(latest_turn_dir "$worker_dir")" || exit $?
@@ -568,19 +444,20 @@ cancel_worker() {
     local parent_dir
     local worker_dir
     local turn_dir
-    local tmux_name
     parent_dir="$(resolve_parent_dir)" || exit $?
     worker_dir="$(resolve_worker "$parent_dir" "$1")" || exit $?
     turn_dir="$(latest_turn_dir "$worker_dir")" || exit $?
 
-    if [ -f "$turn_dir/exit" ] || [ -f "$turn_dir/done" ]; then
+    if turn_process_alive "$turn_dir"; then
+        # The runner records the cancelled completion as it exits.
+        kill -TERM -- "-$(cat "$turn_dir/pid")" 2>/dev/null
+    elif [ -f "$turn_dir/exit" ] || [ -f "$turn_dir/done" ]; then
         die "worker's latest turn is already complete: $1"
+    else
+        # Lost turn: no runner is left to record a completion.
+        printf '%s\n' cancelled >"$turn_dir/exit.tmp"
+        mv "$turn_dir/exit.tmp" "$turn_dir/exit"
     fi
-
-    tmux_name="$(cat "$worker_dir/tmux-name")"
-    tmux kill-session -t "$tmux_name" 2>/dev/null || true
-    printf '%s\n' cancelled >"$turn_dir/exit.tmp"
-    mv "$turn_dir/exit.tmp" "$turn_dir/exit"
     printf '%s\n' "$1"
 }
 
@@ -594,10 +471,8 @@ open_worker() {
     local turn_dir
     local sid
     local cwd
-    local pi_session_dir
     local subagent_root
     local candidate
-    local candidate_cwd
     local current_cwd
     local matches=0
     shift
@@ -628,15 +503,7 @@ open_worker() {
         for candidate in "$subagent_root"/*; do
             [ -d "$candidate/workers/$worker" ] || continue
 
-            if [ -f "$candidate/parent-cwd" ]; then
-                candidate_cwd="$(cat "$candidate/parent-cwd")"
-            elif [ -f "$candidate/workers/$worker/cwd" ]; then
-                candidate_cwd="$(cat "$candidate/workers/$worker/cwd")"
-            else
-                continue
-            fi
-
-            [ "$candidate_cwd" = "$current_cwd" ] || continue
+            [ "$(cat "$candidate/parent-cwd")" = "$current_cwd" ] || continue
             parent_dir="$candidate"
             matches=$((matches + 1))
         done
@@ -657,13 +524,7 @@ open_worker() {
     sid="$(cat "$worker_dir/session-id")"
     cwd="$(cat "$worker_dir/cwd")"
     cd "$cwd" || die "working directory does not exist: $cwd"
-
-    if [ -f "$worker_dir/pi-session-dir" ]; then
-        pi_session_dir="$(cat "$worker_dir/pi-session-dir")"
-        exec pi --session-dir "$pi_session_dir" --session "$sid"
-    fi
-
-    exec pi --session "$sid"
+    exec pi --session-dir "$(cat "$worker_dir/pi-session-dir")" --session "$sid"
 }
 
 main() {
@@ -686,6 +547,7 @@ main() {
     status) run_status "$@" ;;
     open) open_worker "$@" ;;
     cancel) cancel_worker "$@" ;;
+    __run) run_turn "$@" ;;
     -h | --help | help) usage ;;
     *)
         error "unknown command: $command"
@@ -695,4 +557,6 @@ main() {
     esac
 }
 
-main "$@"
+# Turns run from this file for minutes; exiting on the same line keeps bash from
+# reading past main if the script is edited in place meanwhile.
+main "$@"; exit
