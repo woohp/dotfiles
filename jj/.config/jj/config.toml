@@ -1,0 +1,10 @@
+#:schema https://docs.jj-vcs.dev/latest/config-schema.json
+
+[user]
+name = "Hui Peng Hu"
+email = "woohp135@gmail.com"
+
+[ui]
+# Match git: delta reads its theme from the [delta] section of ~/.gitconfig.
+pager = "delta"
+diff-formatter = ":git"

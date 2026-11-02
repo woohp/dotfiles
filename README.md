@@ -44,14 +44,14 @@ This removes only old symlinks that point into this dotfiles checkout, then dry-
 From the repo root:
 
 ```sh
-stow --dotfiles --simulate --verbose zsh git ripgrep tmux starship nvim ghostty bat pi agents claude zellij yt-dlp
-stow --dotfiles --verbose zsh git ripgrep tmux starship nvim ghostty bat pi agents claude zellij yt-dlp
+stow --dotfiles --simulate --verbose zsh git ripgrep tmux starship nvim ghostty bat pi agents claude zellij yt-dlp jj
+stow --dotfiles --verbose zsh git ripgrep tmux starship nvim ghostty bat pi agents claude zellij yt-dlp jj
 ```
 
 ## Unlink dotfiles
 
 ```sh
-stow --dotfiles -D zsh git ripgrep tmux starship nvim ghostty bat pi agents claude zellij yt-dlp
+stow --dotfiles -D zsh git ripgrep tmux starship nvim ghostty bat pi agents claude zellij yt-dlp jj
 ```
 
 ## Optional setup
