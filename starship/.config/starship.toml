@@ -3,9 +3,7 @@ $username\
 $hostname\
 $localip\
 $directory\
-$git_branch\
-$git_commit\
-$git_status\
+$vcs\
 $memory_usage\
 $aws\
 $direnv\
@@ -36,6 +34,13 @@ truncate_to_repo = false
 [cmd_duration]
 # min_time = 0
 show_milliseconds = true
+
+# Colocated jj repos also have .git; check jj first so they show jj info.
+[vcs]
+order = ["jj", "git"]
+
+[jj_status]
+description_empty = ""
 
 [aws]
 disabled = true

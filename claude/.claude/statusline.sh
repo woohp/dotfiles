@@ -134,11 +134,20 @@ __bar() {
   for ((i=0; i<e; i++)); do out+="$empty"; done
   printf '%s' "$out"
 }
+# Read jj state without snapshotting, so the statusline never creates operations.
+__jj() {
+  local cwd="$1"
+  shift
+  jj --ignore-working-copy --no-pager -R "$cwd" "$@" 2>/dev/null
+}
 __git_branch() {
-  local cwd dir
+  local cwd dir bookmarks
   cwd="$(__field workspace.current_dir)"
   if [ -z "$cwd" ]; then cwd="$(__field cwd)"; fi
-  if [ -n "$cwd" ] && command -v git >/dev/null 2>&1; then
+  if [ -n "$cwd" ] && __jj "$cwd" root >/dev/null; then
+    bookmarks="$(__jj "$cwd" log --no-graph -r 'heads(::@ & bookmarks())' -T 'local_bookmarks.join(" ")')"
+    printf '%s%s' "${bookmarks:+$bookmarks }" "$(__jj "$cwd" log --no-graph -r @ -T 'change_id.shortest(4)')"
+  elif [ -n "$cwd" ] && command -v git >/dev/null 2>&1; then
     git -C "$cwd" rev-parse --abbrev-ref HEAD 2>/dev/null
   else
     __field workspace.git_worktree
@@ -148,7 +157,9 @@ __git_dirty() {
   local cwd
   cwd="$(__field workspace.current_dir)"
   if [ -z "$cwd" ]; then cwd="$(__field cwd)"; fi
-  if [ -n "$cwd" ] && command -v git >/dev/null 2>&1; then
+  if [ -n "$cwd" ] && __jj "$cwd" root >/dev/null; then
+    __jj "$cwd" log --no-graph -r @ -T 'if(empty, "0", "1")'
+  elif [ -n "$cwd" ] && command -v git >/dev/null 2>&1; then
     if [ -n "$(git -C "$cwd" status --porcelain 2>/dev/null)" ]; then printf '1'; else printf '0'; fi
   else
     printf '0'
