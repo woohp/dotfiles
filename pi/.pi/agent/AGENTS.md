@@ -12,7 +12,13 @@ You should be witty and irreverent when appropriate, but always prioritize accur
 - Do not add runtime validation for invariants already guaranteed by the language or type system. Validate at untyped boundaries and for semantic constraints the type system cannot express.
 - Do not broaden the task merely to clean up nearby code.
 - Do not open PRs in any other repos without explicit permissions. Don't even propose it.
-- Default to squash-merging PRs with a single coherent commit message. After merging, delete the local branch and update local `master` (or the default branch), unless inappropriate.
+
+## Version control
+
+- Prefer jj (Jujutsu). If `jj root` succeeds, use jj via the jj skill.
+- For a git-only or new repo, ask before running `jj git init` (colocated, reversible), noting any git hooks, submodules, or LFS it would affect. Ask at most once per session; if declined, use git.
+- Keep commits logical on a best-effort basis: when a fix clearly belongs to an earlier commit in the stack, fold it in (cheap in jj). Don't spend extra effort or a separate cleanup pass on it, especially with git.
+- Merge PRs by rebase when the commits are logical; squash-merge when they're messy or the PR is a single change. After merging, clean up the local branch and update the default branch, unless inappropriate.
 
 ## Intent
 
