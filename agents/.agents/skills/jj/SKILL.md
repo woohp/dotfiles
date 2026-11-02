@@ -33,6 +33,7 @@ Use jj, not mutating git commands, when `jj root` succeeds. Colocated repos also
 
 ## Parallel work: workspaces
 
+- Workspaces are jj's equivalent of git worktrees: extra working copies of the same repo, each with its own `@`. Every jj command snapshots the working copy it runs in, so anyone sharing a checkout (another session, an agent, or the user) also shares its `@`; separate workspaces keep that work apart.
 - Use `jj workspace add ../REPO-NAME [-r REV] -m "msg"`, not `git worktree add` or worktree tools; jj doesn't see plain git worktrees. In colocated repos the workspace is also a git worktree (detached HEAD), so git/`gh` work there.
 - Commits are shared across workspaces immediately (no push/fetch). Only rewrite your own stack: rewriting another workspace's `NAME@` or its ancestors makes it stale, and `jj workspace update-stale` there keeps its unsnapshotted edits in a divergent copy of the change that must be reconciled.
 - Ignored files (`node_modules`, `.venv`, build caches) aren't copied. Copy what's needed with copy-on-write: `cp -a --reflink=auto` (Linux btrfs/XFS) or `cp -ac` (macOS APFS).

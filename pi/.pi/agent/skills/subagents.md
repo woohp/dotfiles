@@ -187,6 +187,6 @@ State lives outside the project under `${SUBAGENT_STATE_DIR:-~/.pi/agent/subagen
 
 ## Delegation and filesystem safety
 
-Read-only workers can share one working tree. If workers may modify overlapping files, coordinate file ownership or use separate Git worktrees.
+Read-only workers can share one working tree. Workers that edit files can be given separate workspaces (jj) or worktrees (git) via `--cwd`.
 
 Good uses include independent reviews, separate subsystem investigations, implementation plus independent review, competing approaches, and partitioning a large search.
