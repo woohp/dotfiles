@@ -36,4 +36,5 @@ Use jj, not mutating git commands, when `jj root` succeeds. Colocated repos also
 - Bookmarks are jj's branches and do not follow new commits. Move with `jj bookmark set NAME -r REV` or `jj bookmark advance`.
 - Push a new PR branch: `jj git push --named NAME=REV` (or `-c REV` for an auto `push-<changeid>` name). Update it after rewriting: move the bookmark, then `jj git push -b NAME` (new bookmarks auto-track; `--allow-new` no longer exists). Push refuses empty descriptions and conflicts — fix rather than override. After pushing, `jj new` so later edits don't amend the pushed commit.
 - Use `--dry-run` first when pushing anything unusual. Push is force-with-lease by default.
-- After a PR is merged on the remote: `jj git fetch` (abandons commits the remote dropped), then `jj new 'trunk()'`.
+- `gh` in colocated repos: git HEAD is detached, so pass `gh pr create --head NAME`. Avoid `gh pr checkout` and `gh pr merge --delete-branch` (they run local git checkouts); use `jj new NAME@origin` and plain `gh pr merge --squash`.
+- After a PR is merged: `jj git fetch`. If the remote branch was deleted, fetch abandons the PR commits; otherwise run `jj abandon 'trunk()..NAME' && jj git push --deleted` (deleting only the bookmark leaves the commits visible). Then `jj new 'trunk()'`.
