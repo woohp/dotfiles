@@ -8,6 +8,18 @@
     "type": "command",
     "command": "\"$HOME/.claude/statusline.sh\""
   },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$HOME/.claude/pi-subagent-env.sh\""
+          }
+        ]
+      }
+    ]
+  },
   "effortLevel": "medium",
   "autoCompactEnabled": false,
   "skipDangerousModePermissionPrompt": true,
