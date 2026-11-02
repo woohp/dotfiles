@@ -30,7 +30,7 @@ jq '{is_error, subtype, session_id, num_turns, total_cost_usd, denied: (.permiss
 jq -r '.result' claude-run.json
 ```
 
-- Run real work with `background: true` and a `timeout` sized for the task; the default 30 seconds kills it. Send all three lines as one command so the delivered `<command_result>` carries the summary and answer.
+- Send all three lines as one command so a single call returns the summary and answer. Bash waits for Claude to finish; set a `timeout` only to cap a run.
 - A restricted run can report `success` after a denied tool call; check `permission_denials`.
 - Continue a session with `--resume <session_id>` and a new `-p` prompt.
 
