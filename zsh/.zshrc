@@ -180,6 +180,8 @@ alias pip="uv pip"
 # switched from autojump, but still prefer j
 alias j=z
 
+alias cc=claude
+
 export PATH="/opt/homebrew/opt/llvm/bin:$PATH"
 export HOSTALIASES=~/.hosts
 
