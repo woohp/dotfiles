@@ -8,3 +8,5 @@ email = "woohp135@gmail.com"
 # Match git: delta reads its theme from the [delta] section of ~/.gitconfig.
 pager = "delta"
 diff-formatter = ":git"
+# Git-style <<<<<<< / ||||||| / ======= / >>>>>>> markers instead of jj's diff style.
+conflict-marker-style = "git"
