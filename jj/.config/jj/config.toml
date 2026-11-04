@@ -10,3 +10,4 @@ pager = "delta"
 diff-formatter = ":git"
 # Git-style <<<<<<< / ||||||| / ======= / >>>>>>> markers instead of jj's diff style.
 conflict-marker-style = "git"
+paginate = "never"
