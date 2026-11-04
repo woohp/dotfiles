@@ -1,12 +1,12 @@
 {
+  "cleanupPeriodDays": 3650,
   "attribution": {
     "commit": "",
     "pr": ""
   },
   "model": "opus[1m]",
-  "statusLine": {
-    "type": "command",
-    "command": "\"$HOME/.claude/statusline.sh\""
+  "permissions": {
+    "defaultMode": "bypassPermissions"
   },
   "hooks": {
     "SessionStart": [
@@ -20,13 +20,20 @@
       }
     ]
   },
+  "statusLine": {
+    "type": "command",
+    "command": "\"$HOME/.claude/statusline.sh\""
+  },
   "effortLevel": "medium",
-  "autoCompactEnabled": false,
-  "skipDangerousModePermissionPrompt": true,
-  "theme": "light",
   "modelSettings": {
     "claude-opus-5-5": {
       "effortLevel": "high"
+    },
+    "claude-fable-5-2": {
+      "effortLevel": "medium"
     }
-  }
+  },
+  "skipDangerousModePermissionPrompt": true,
+  "theme": "light",
+  "autoCompactEnabled": false
 }
