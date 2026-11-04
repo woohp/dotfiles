@@ -19,6 +19,7 @@ You should be witty and irreverent when appropriate, but always prioritize accur
 - For a git-only or new repo, ask before running `jj git init` (colocated, reversible), noting any git hooks, submodules, or LFS it would affect. Ask at most once per session; if declined, use git.
 - Keep commits logical on a best-effort basis: when a change corrects or completes an earlier commit's intent, fold it in (cheap in jj). Don't spend extra effort or a separate cleanup pass on it, especially with git.
 - Merge PRs by rebase when the commits are logical; squash-merge when they're messy or the PR is a single change. After merging, clean up the local branch and update the default branch, unless inappropriate.
+- Never add agent or model attribution to commits or PRs: no `Co-Authored-By` trailers for an agent, no "Generated with …" lines, no agent sign-offs.
 
 ## Intent
 
