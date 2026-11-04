@@ -41,3 +41,21 @@ if not vim.b.jinja_syntax_autocmd_loaded then
   end
   vim.b.jinja_syntax_autocmd_loaded = true
 end
+
+-- Autoformat setting
+local set_autoformat = function(pattern, bool_val)
+  vim.api.nvim_create_autocmd({ "FileType" }, {
+    pattern = pattern,
+    callback = function()
+      vim.b.autoformat = bool_val
+    end,
+  })
+end
+
+set_autoformat({ "json" }, false)
+-- set_autoformat({ "python" }, false)
+-- set_autoformat({ "cpp" }, true)
+-- set_autoformat({ "fish" }, false)
+-- set_autoformat({ "lua" }, false)
+-- set_autoformat({ "perl" }, false)
+-- set_autoformat({ "yaml" }, false)
