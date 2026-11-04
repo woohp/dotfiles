@@ -1,5 +1,5 @@
 {
-  "lastChangelogVersion": "1.3.0",
+  "lastChangelogVersion": "1.5.0",
   "defaultProvider": "openai-codex",
   "defaultModel": "gpt-6.1-sol",
   "defaultThinkingLevel": "high",
@@ -29,5 +29,11 @@
     "colorBlazing": "#44ddff",
     "slidingWindow": 1000,
     "display": "full"
+  },
+  "extensionChangelogVersions": {
+    "{\"source\":\"npm:pi-mono-context\",\"scope\":\"user\"}": "0.1.1",
+    "{\"source\":\"npm:pi-mono-btw\",\"scope\":\"user\"}": "1.7.4",
+    "{\"source\":\"npm:pi-mono-ask-user-question\",\"scope\":\"user\"}": "1.8.0",
+    "{\"source\":\"npm:pi-web-access\",\"scope\":\"user\"}": "0.47.0"
   }
 }
