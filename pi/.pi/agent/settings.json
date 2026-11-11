@@ -16,7 +16,8 @@
     "npm:pi-mono-ask-user-question",
     "npm:pi-web-access",
     "npm:pi-hashline-edit",
-    "https://github.com/hjanuschka/pi-multi-pass.git"
+    "https://github.com/hjanuschka/pi-multi-pass.git",
+    "npm:pi-output-styles"
   ],
   "theme": "catppuccin-latte",
   "tokenSpeed": {
@@ -34,6 +35,7 @@
     "{\"source\":\"npm:pi-mono-context\",\"scope\":\"user\"}": "0.1.1",
     "{\"source\":\"npm:pi-mono-btw\",\"scope\":\"user\"}": "1.7.4",
     "{\"source\":\"npm:pi-mono-ask-user-question\",\"scope\":\"user\"}": "1.8.0",
-    "{\"source\":\"npm:pi-web-access\",\"scope\":\"user\"}": "0.47.0"
+    "{\"source\":\"npm:pi-web-access\",\"scope\":\"user\"}": "0.47.0",
+    "{\"source\":\"npm:pi-output-styles\",\"scope\":\"user\"}": "0.3.5"
   }
 }
