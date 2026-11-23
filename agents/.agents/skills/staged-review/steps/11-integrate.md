@@ -2,8 +2,9 @@
 
 **Applies when:** always, after step 10.
 
-Read the findings file from disk. It's the record of the lenses, so build the list from it, not
-from memory. If a step's section is missing, run that step first.
+Read the findings from disk, every file if steps ran in separate subagents. They're the record
+of the lenses, so build the list from them, not from memory. If a step's section is missing, run
+that step first.
 
 ## Look at the approach fresh
 

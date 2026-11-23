@@ -9,8 +9,9 @@ Review the change one lens at a time. Each lens lives in its own file under `ste
 step file only when its step starts, so later lenses don't color earlier ones.
 
 Every agent harness has this skill. When delegating, name `staged-review` and give the review
-scope. For a single step, also give its number and the findings file path, and wait for it to
-finish before starting the next step. Don't paste the skill's text.
+scope. For a single step, also give its number and a findings file of its own. Delegated steps
+can run in parallel. Wait for all of them before step 11, which reads every findings file. Don't
+paste the skill's text.
 
 Review the risks each lens names, including migration safety and security. Record any other bug
 you notice, but leave a general correctness pass to a separate review, such as `/code-review`.
