@@ -5,16 +5,15 @@ description: Review a PR or diff one lens at a time (minimalism, existing tools,
 
 # Staged review
 
-Review a change through several lenses, one at a time. Each lens lives in its own file under
-`steps/`. Read a step file only when you start that step. Reading ahead lets later lenses color
-the earlier ones, which is what this skill exists to prevent.
+Review the change one lens at a time. Each lens lives in its own file under `steps/`. Open each
+step file only when its step starts, so later lenses don't color earlier ones.
 
-Every agent harness has this skill. When you hand this review, or one of its steps, to a
-subagent in any harness, name the skill and the step and give the scope. Don't paste the
-instructions.
+Every agent harness has this skill. When delegating, name `staged-review` and give the review
+scope. For a single step, also give its number and the findings file path, and wait for it to
+finish before starting the next step. Don't paste the skill's text.
 
-This is a quality review, not a bug hunt. Use a correctness review for that, such as
-`/code-review`. If you trip over a bug, record it, but don't go looking.
+Review the risks each lens names, including migration safety and security. Record any other bug
+you notice, but leave a general correctness pass to a separate review, such as `/code-review`.
 
 ## Before the first step
 
@@ -35,7 +34,7 @@ required behavior is not a simplification.
 ## The findings file
 
 Before the first step, create a temp file outside the repo checkout. Every step appends to it,
-and step 11 builds the review from it. Findings kept only in your head get lost.
+and step 11 builds the review from it.
 
 Each finding has:
 
@@ -45,9 +44,9 @@ Each finding has:
 - the step that found it
 - confidence: confirmed, or plausible with what would settle it
 
-Check a finding against the code before you add it. Open the file, grep for callers, look up the
-stack. A later step may revise or withdraw an earlier finding. Mark it revised or withdrawn
-instead of deleting it.
+Check each finding against the code and the stack before appending it. To revise or withdraw an
+earlier finding, append a note that names its step and location, and leave the original entry as
+it is.
 
 ## The steps
 
@@ -63,17 +62,16 @@ instead of deleting it.
 10. `steps/10-conventions.md`
 11. `steps/11-integrate.md`
 
-For each step:
+For steps 1 to 10:
 
 1. Read the step file.
 2. Check its "Applies when" line. If the change gives it nothing to review, append
    `## Step N: <name>` and `skipped: <reason>` to the findings file, and go to the next step.
-3. Review through that lens only. A problem that belongs to a later lens waits for it.
-4. Append a `## Step N: <name>` section to the findings file with every finding from this step,
-   or `no findings` if there were none. Revisions to earlier findings go in this section too,
-   naming the finding they change.
-5. Only once that section is written, open the next step file.
+3. Review through that lens only. If you notice an issue another lens covers, record a short note
+   for integration and don't investigate it under this lens.
+4. Append a `## Step N: <name>` section with every finding from this step, or `no findings`.
+5. Write the section before opening the next step file.
 
 ## Output
 
-Step 11 turns the findings file into the final review. Don't present anything before it.
+After step 10, open step 11 and follow it. Present nothing before then.

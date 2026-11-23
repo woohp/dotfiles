@@ -13,33 +13,29 @@
   text is right.
 - **Integrity applied halfway.** Composite keys that guard one dimension, such as the client,
   but not another the same design guards elsewhere, such as the source.
-- **Unused structure.** Indexes and unique constraints that no query or foreign key uses. Check
-  the queries, including further up the stack.
-- **Index shape.** Leading columns should match the filters, usually the tenant or client first.
-  `DESC` on a single-column sort buys nothing.
+- **Redundant structure.** Indexes that no query or foreign key uses, and indexes or constraints
+  that duplicate others. Keep a constraint that enforces a required rule even if no query uses
+  it. How well indexes fit the queries belongs to the performance lens.
 - **Checks that don't check.** Loose patterns, such as a GUID regex that takes any hyphen
   placement, or a text column where a native type exists.
-- **Names.** Let the tools name constraints and indexes. With SQLAlchemy, declare a
-  `naming_convention` on the metadata once and leave `name=` off, or let the database pick its
-  defaults. Name one by hand only when something needs that exact name, such as an existing
-  constraint the migration tool compares by name. Refer to constraints by their columns where
-  the API allows it, for example `on_conflict_do_nothing(index_elements=[...])` over
-  `constraint="..."`. When a name is hand-written, it says what the constraint checks, not a
-  version or a ticket.
+- **Names.** Use the project's naming convention or the database's defaults. With SQLAlchemy,
+  that means a `naming_convention` on the metadata and no `name=`. Give a name by hand only when
+  a caller or migration needs that exact name. Prefer column targets where the API allows them,
+  such as `on_conflict_do_nothing(index_elements=[...])`. A hand-written name says what the
+  constraint enforces, not a version or a ticket.
 
 ## Migration safety
 
-- **Locks and rewrites.** Volatile defaults rewrite the table. Adding a constraint scans it.
-  Is there a lock timeout, and how big is the table?
-- **Running code.** Does code deployed now keep working mid-deploy? Add before use, drop after.
-- **Backfills and defaults.** Existing rows must pass every new constraint.
-- **Order and conflicts.** Which environments migrate when. Two open migrations off the same
-  parent revision.
-- **Rollback.** Follow the project's convention.
+- **Locks and rewrites.** Check which statements lock, scan or rewrite a table on the deployed
+  database version. Estimate the cost from the table's size, and check the lock timeout.
+- **Rollout.** Old and new code must both work while the deploy is in progress.
+- **Backfills.** Backfill before enforcing a constraint, so existing rows pass it.
+- **Order and conflicts.** Check the migration order in each environment, and whether other open
+  PRs create conflicting revisions.
+- **Rollback.** Follow the project's convention, and name any step it can't undo.
 
 ## Mirrors
 
-Hand-kept copies of the schema, such as ORM models, a second language's schema file, or docs,
-must agree with the migration. Find out what actually compares them. For example, Alembic
-compares check constraints by name only unless configured otherwise, so their bodies can drift
-unnoticed.
+Compare the migration with any hand-kept copies of the schema, such as ORM models, a second
+language's schema file, or docs. Check what the project's tooling actually compares, including
+whether it notices a change to a constraint's expression.

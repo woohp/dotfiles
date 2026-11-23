@@ -5,9 +5,9 @@ retries, scheduling, formatting or anything else that a library or tool commonly
 
 Look for hand-rolled code where an existing tool already does the job well.
 
-- **Data work.** Loops that filter, join or aggregate CSV or Parquet files belong in DuckDB or
-  Polars. Array math in Python loops belongs in NumPy. Model fitting and scoring belong in
-  scikit-learn or the project's existing library.
+- **Data work.** Consider DuckDB or Polars for filtering, joining or aggregating CSV or Parquet
+  files, NumPy for array math, and the project's modeling library, such as scikit-learn, for
+  fitting and scoring.
 - **Parsers and formats.** Hand-split CSV, regex-parsed JSON, HTML, dates or URLs, and
   hand-built Excel or PDF output.
 - **Validation and serialization.** Field-by-field checks that a schema library such as Pydantic
@@ -17,7 +17,7 @@ Look for hand-rolled code where an existing tool already does the job well.
 - **The project's own helpers.** A second copy of something the repo already has. Search the
   repo before proposing a new dependency.
 
-Before recommending a tool, check that it actually fits. Probe it on the real input if you can,
-and say what it replaces. Weigh what it costs: a new dependency, its size where bundles have
-limits, and its maintenance. Recommend it when it removes meaningful code or a class of bugs,
-not to swap ten clear lines for an import.
+Check that the tool keeps the required behavior on representative input, and name the code or
+failure mode it removes. Weigh the dependency, its maintenance, and its size where bundles have
+limits. Keep simple code when the tool doesn't improve it. Arguments about speed alone belong to
+the performance lens.
