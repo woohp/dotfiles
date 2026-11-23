@@ -29,11 +29,12 @@ Then be strategic. The goal is a better result, not busy work for the author.
 
 That leaves three outcomes:
 
-- **Worth switching now.** Lead with the alternative, why it's better, and what it replaces. Also
-  flag any finding that needs action whichever approach the author picks and can't wait for the
-  next review. Keep the rest in the findings file, because it may not apply after the switch.
-- **Worth doing, but later.** Describe the alternative as follow-up work and when it would be
-  worth doing, then present the full list.
+- **Worth switching now.** A request. Lead with the alternative, why it's better, and what it
+  replaces. Also flag any finding that needs action whichever approach the author picks and
+  can't wait for the next review. Keep the rest in the findings file, because it may not apply
+  after the switch.
+- **Worth doing, but later.** Something to consider. Describe the alternative as follow-up work
+  and when it would be worth doing, then present the full list.
 - **Not worth raising.** Present the full list as usual.
 
 ## The full list
@@ -51,8 +52,15 @@ Unless the approach replaces the review, present every finding from the lenses.
 5. **List what you omit.** A finding leaves the list only for a good reason: it was withdrawn,
    it didn't survive checking, or a conflict went the other way. List each one with its reason
    in one line, so the reader can overrule it. Merged duplicates count as reported, not omitted.
-6. **Sort by consequence** and by what the fix will cost if it waits, not by file type. Tag each
-   finding:
+6. **Label each finding a request or something to consider.**
+   - **Request:** should change in this PR. It holds the PR up until it's addressed.
+   - **Consider:** for the author to think about, or follow-up work. It doesn't ask for a change
+     in this PR and doesn't hold it up.
+
+   Make something a request only when leaving it costs more than fixing it now: it's hard to
+   change after merge, it's urgent, or the fix is cheap. Everything else is to consider.
+7. **Tag each finding by consequence** and by what the fix will cost if it waits, not by file
+   type:
    - **high:** a major risk, or rework that gets costly after merge
    - **medium:** a real but contained cost
    - **low:** a small, concrete cost
@@ -63,8 +71,9 @@ Unless the approach replaces the review, present every finding from the lenses.
 - A plain-language summary of what the PR does, for someone who hasn't read it: what changes
   for users, what is groundwork for later PRs, and what it leaves out on purpose.
 - The approach, if you raised it.
-- The full list, unless the approach replaced it. Each finding has its tag, location, problem and
-  fix. A plausible finding also says what would confirm it.
+- The full list, unless the approach replaced it: requests first, then things to consider, each
+  sorted from high to nit. Each finding has its label, tag, location, problem and fix. A
+  plausible finding also says what would confirm it.
 - Omitted findings and their reasons.
 - The steps you skipped, and why.
 - What you checked and found fine, where a reader would otherwise wonder.
