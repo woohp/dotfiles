@@ -7,13 +7,15 @@ the code harder to understand or maintain. Check the project's configuration bef
 something a violation: the language version, the test runner's mode, linter rules, plugins.
 Newer syntax that the configured version allows is not a violation.
 
-- **Language.** Standard naming, such as an `Error` suffix on Python exception classes.
-  Durations as duration types, not millisecond integers carried over from another language.
+- **Language.** The language's standard naming, for example an `Error` suffix on exception
+  classes in Python. Durations as the language's duration type, not millisecond integers carried
+  over from another language, for example `timedelta` in Python.
 - **Data access.** Raw SQL against mapped models where the query builder can express the query
   and would give typed results or checked column names. Upserts that swallow every conflict
   without saying which ones they expect.
 - **Logging and telemetry.** Caught errors reported with the error, the way the library intends.
-- **Tests.** The framework's own features, such as parametrize instead of a loop over cases.
+- **Tests.** The framework's own features, for example table-driven cases with
+  `pytest.mark.parametrize` or Vitest's `test.each` instead of a loop over cases in one test.
 - **Tool conventions.** Migration helpers versus raw SQL, matching the project's existing
   migrations.
 

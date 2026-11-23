@@ -5,12 +5,13 @@ shape, indexes or transaction scope.
 
 ## Code
 
-- **Data structures.** Membership tests on a list where a set or dict belongs, repeated scans of
-  a list to find one item, and a queue built on `list.pop(0)` where a `deque` belongs.
+- **Data structures.** Membership tests on a list or array where a set or map belongs, repeated
+  scans to find one item, and a queue that removes from the front of an array where a deque
+  belongs, for example `list.pop(0)` in Python.
 - **Algorithms.** Repeated scans of the same data that a lookup table, sort, join or batch
   operation would avoid.
-- **The right tool.** Row-by-row Python over arrays or tables that NumPy, Polars or DuckDB would
-  do in one vectorized call.
+- **The right tool.** Row-by-row code over arrays or tables that a vectorized library would do in
+  one call, for example NumPy, Polars or DuckDB in Python.
 - **Repeated work.** Recompiling, reparsing or refetching inside a loop what could be done once
   before it.
 - **Memory.** Loading a whole file or result set when streaming or batching would do.

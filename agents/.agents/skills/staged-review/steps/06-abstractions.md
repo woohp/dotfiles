@@ -11,10 +11,11 @@ group of functions shares state.
   two or three times: the function, the interface signature and the pass-through. Keep it only
   if it owns a real boundary, such as a public API or a dependency's lifetime. Otherwise make the
   real work the methods, or drop the class.
-- **Interfaces.** In Python, use an abstract base class for a contract implemented by explicit
-  subclassing, and a protocol for a structural or external contract.
-- **Alternate constructors.** Keep a `from_row`-style classmethod when it centralizes conversion
-  or validation that callers would otherwise repeat.
+- **Interfaces.** Use the language's explicit interface mechanism for a contract the project owns
+  and implements by declaration, and structural typing for a loose or external contract. For
+  example, in Python, an abstract base class versus a `Protocol`.
+- **Alternate constructors.** Keep a factory, such as a `from_row` class method, when it
+  centralizes conversion or validation that callers would otherwise repeat.
 
 Look at how later PRs in the stack use the code before recommending a change. If the decision
 belongs to a later PR, say so and point at it.

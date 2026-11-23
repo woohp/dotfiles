@@ -14,7 +14,8 @@ can run in parallel. Wait for all of them before step 11, which reads every find
 paste the skill's text.
 
 Review the risks each lens names, including migration safety and security. Record any other bug
-you notice, but leave a general correctness pass to a separate review, such as `/code-review`.
+you notice, but leave a general correctness pass to a separate review, for example `/code-review`
+in Claude Code.
 
 ## Before the first step
 
@@ -22,8 +23,9 @@ Read the change and its context. Record no findings yet.
 
 - The diff, the PR description and any linked ticket.
 - The code around each change: callers, callees, and the existing patterns it should follow.
-- The stack. Find the PR's base and any PRs based on its branch
-  (`gh pr list --base <head branch>`). Something that looks unused here may be used further up.
+- The stack. Find the PR's base and any PRs based on its branch, for example with
+  `gh pr list --base <head branch>` on GitHub. Something that looks unused here may be used
+  further up.
 - Other open PRs that touch the same files, migrations above all. Two migrations off the same
   revision, or two PRs reworking the same table, conflict.
 - The project's written guidance: `AGENTS.md`, `CLAUDE.md`, a contributing guide, and any skills

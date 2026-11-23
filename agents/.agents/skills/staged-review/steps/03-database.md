@@ -18,10 +18,12 @@
   it. How well indexes fit the queries belongs to the performance lens.
 - **Checks that don't check.** Loose patterns, such as a GUID regex that takes any hyphen
   placement, or a text column where a native type exists.
-- **Names.** Use the project's naming convention or the database's defaults. With SQLAlchemy,
-  that means a `naming_convention` on the metadata and no `name=`. Give a name by hand only when
-  a caller or migration needs that exact name. Prefer column targets where the API allows them,
-  such as `on_conflict_do_nothing(index_elements=[...])`. A hand-written name says what the
+- **Names.** Let the ORM's naming convention or the database's defaults name constraints and
+  indexes. For example, in SQLAlchemy, set a `naming_convention` on the metadata and leave
+  `name=` off. Give a name by hand only when a caller or migration needs that exact name. Where
+  an API can target a constraint by its columns, prefer that to its name, for example
+  `on_conflict_do_nothing(index_elements=[...])` in SQLAlchemy or
+  `onConflictDoNothing({ target: [...] })` in Drizzle. A hand-written name says what the
   constraint enforces, not a version or a ticket.
 
 ## Migration safety

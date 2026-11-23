@@ -7,8 +7,8 @@ Look for code a teammate would have to read twice.
 - **Long or tangled functions.** Functions with several phases, or hard to follow in one read.
   There's no line limit, so use judgment. Clarify the flow in place first. Extract a helper when
   its name makes a distinct operation clearer, and don't create forwarding layers.
-- **Repeated conditions that mean different things.** For example, three `if row is None` checks
-  in a row, each for a different reason.
+- **Repeated conditions that mean different things.** For example, three null checks on the same
+  variable in a row, each for a different reason.
 - **Awkward returns.** Tuples whose parts overlap, or a docstring that disagrees with what comes
   back.
 - **Control flow by exception.** Raising only to catch it a few lines down.
